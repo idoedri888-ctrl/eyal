@@ -484,15 +484,21 @@
   })();
 
   /* ---------------- cloud sync (best-effort; app works fully offline without it) ----------------
-     Uses jsonblob.com, a free anonymous JSON store with no login for us or the user.
+     Uses kvdb.io, a free anonymous key-value store with no login for us or the user. Unlike
+     some similar services, bucket creation returns the new bucket id as plain response TEXT
+     (not a response header) — headers on a cross-origin response are often invisible to
+     browser fetch() unless the server explicitly opts in, which caused an earlier version of
+     this to silently fail. Reading the body instead avoids that whole class of problem.
      A sync id lives in the URL (?sync=ID) so every device opening the SAME link reads/writes
      the same record. If the network or the service is unavailable, everything below fails
      silently and the app keeps working purely on localStorage, exactly as before. */
-  var CLOUD_BASE = "https://jsonblob.com/api/jsonBlob/";
+  var CLOUD_HOST = "https://kvdb.io/";
+  var CLOUD_KEY = "state";
   var cloudId = null;
   var cloudReady = false;
   var cloudPushTimer = null;
-  var cloudAttempted = false;
+
+  function cloudUrl() { return CLOUD_HOST + cloudId + "/" + CLOUD_KEY; }
 
   function setSyncIndicator(mode) {
     var node = document.getElementById("syncIndicator");
@@ -523,39 +529,44 @@
       cloudPull();
     } else if (location.protocol !== "file:") {
       // only auto-provision a cloud record on a real hosted page; a local file:// copy stays offline-only
-      cloudCreate();
+      cloudCreateBucket();
     } else {
       setSyncIndicator("local");
     }
   }
 
-  function cloudCreate() {
+  function cloudCreateBucket() {
     setSyncIndicator("syncing");
-    fetch(CLOUD_BASE.slice(0, -1), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(state)
-    }).then(function (res) {
-      var loc = res.headers.get("Location") || res.headers.get("location");
-      if (!loc) throw new Error("no id in response");
-      var id = loc.split("/").pop();
-      cloudId = id;
-      try { localStorage.setItem("eyalOS.syncId", id); } catch (e) {}
-      try { history.replaceState(null, "", location.pathname + "?sync=" + id + location.hash); } catch (e) {}
-      cloudReady = true;
-      setSyncIndicator("synced");
-    }).catch(function () {
-      cloudReady = false;
-      setSyncIndicator("local");
-    });
+    fetch(CLOUD_HOST, { method: "POST" })
+      .then(function (res) { if (!res.ok) throw new Error("bucket create failed"); return res.text(); })
+      .then(function (bucketId) {
+        bucketId = (bucketId || "").trim();
+        if (!bucketId) throw new Error("empty bucket id");
+        cloudId = bucketId;
+        try { localStorage.setItem("eyalOS.syncId", bucketId); } catch (e) {}
+        try { history.replaceState(null, "", location.pathname + "?sync=" + bucketId + location.hash); } catch (e) {}
+        cloudReady = true;
+        return fetch(cloudUrl(), { method: "PUT", body: JSON.stringify(state) });
+      })
+      .then(function (res) { setSyncIndicator(res && res.ok ? "synced" : "error"); })
+      .catch(function () {
+        cloudReady = false;
+        setSyncIndicator("local");
+      });
   }
 
   function cloudPull() {
     if (!cloudId) return;
     setSyncIndicator("syncing");
-    fetch(CLOUD_BASE + cloudId, { headers: { "Accept": "application/json" } })
-      .then(function (res) { if (!res.ok) throw new Error("not found"); return res.json(); })
-      .then(function (remote) {
+    fetch(cloudUrl())
+      .then(function (res) {
+        if (res.status === 404) return null; // bucket exists but no value written yet
+        if (!res.ok) throw new Error("pull failed");
+        return res.text();
+      })
+      .then(function (text) {
+        var remote = null;
+        if (text) { try { remote = JSON.parse(text); } catch (e) { remote = null; } }
         if (remote && Array.isArray(remote.tasks)) {
           var localTime = (state && state._updatedAt) || 0;
           var remoteTime = remote._updatedAt || 0;
@@ -576,9 +587,8 @@
     clearTimeout(cloudPushTimer);
     cloudPushTimer = setTimeout(function () {
       setSyncIndicator("syncing");
-      fetch(CLOUD_BASE + cloudId, {
+      fetch(cloudUrl(), {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(state)
       }).then(function (res) { setSyncIndicator(res.ok ? "synced" : "error"); })
         .catch(function () { setSyncIndicator("error"); });
