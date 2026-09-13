@@ -1,0 +1,1338 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;600;700&family=Heebo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0B1712">
+<title>מערכת ההפעלה של אייל</title>
+<style>
+  :root {
+    --bg: #F2F6F1;
+    --surface: #FFFFFF;
+    --surface-2: #E9F1E9;
+    --surface-3: #DFEBE0;
+    --border: #D6E2D5;
+    --ink: #13231A;
+    --ink-soft: #4C6255;
+    --ink-faint: #86998C;
+    --accent: #D9A22C;
+    --accent-ink: #241705;
+    --jungle: #0E6B4F;
+    --sunset: #C1592B;
+    --violet: #6E4FA3;
+    --sea: #0E7A94;
+    --routine: #4C5C78;
+    --good: #2F9E64;
+    --warn: #C2402C;
+    --shadow: 0 1px 2px rgba(19,35,26,.06), 0 10px 28px -14px rgba(19,35,26,.22);
+    --radius-lg: 20px;
+    --radius-md: 13px;
+    --radius-sm: 9px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0B1712; --surface: #12201A; --surface-2: #172A21; --surface-3: #1D3327;
+      --border: #24392C; --ink: #EAF3EC; --ink-soft: #9DB6A6; --ink-faint: #66806F;
+      --accent: #E8B94A; --accent-ink: #201400;
+      --jungle: #33B481; --sunset: #E38A55; --violet: #AB8CE3; --sea: #35B0CC; --routine: #93A8D6;
+      --good: #48C387; --warn: #E9695A;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 14px 32px -14px rgba(0,0,0,.55);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B1712; --surface: #12201A; --surface-2: #172A21; --surface-3: #1D3327;
+    --border: #24392C; --ink: #EAF3EC; --ink-soft: #9DB6A6; --ink-faint: #66806F;
+    --accent: #E8B94A; --accent-ink: #201400;
+    --jungle: #33B481; --sunset: #E38A55; --violet: #AB8CE3; --sea: #35B0CC; --routine: #93A8D6;
+    --good: #48C387; --warn: #E9695A;
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 14px 32px -14px rgba(0,0,0,.55);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); }
+  .app {
+    direction: rtl;
+    font-family: 'Heebo', 'Segoe UI', Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    min-height: 100%;
+    padding: 26px 16px 70px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  bdi { unicode-bidi: isolate; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .95em; }
+  h1, h2, h3 { font-family: 'Frank Ruhl Libre', Georgia, serif; text-wrap: balance; margin: 0; }
+  button, input, select { font-family: inherit; }
+
+  /* ---------- Masthead ---------- */
+  .masthead-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .masthead-id { display: flex; flex-direction: column; gap: 2px; }
+  .eyebrow { margin: 0; font-size: .78rem; letter-spacing: .08em; color: var(--jungle); font-weight: 600; }
+  .masthead h1 { font-size: clamp(1.7rem, 4.4vw, 2.3rem); font-weight: 700; color: var(--ink); }
+  .sync-indicator { font-size: .72rem; color: var(--ink-faint); display: inline-flex; align-items: center; gap: 4px; min-height: 1.2em; }
+  .sync-indicator.sync-synced { color: var(--good); }
+  .sync-indicator.sync-error { color: var(--warn); }
+  .sync-indicator.sync-syncing { color: var(--ink-faint); }
+
+  .tip-banner {
+    position: fixed; inset-inline: 12px; bottom: 12px; z-index: 45; margin-inline: auto; max-width: 460px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border); box-shadow: var(--shadow);
+    border-radius: 14px; padding: 12px 14px; font-size: .82rem; line-height: 1.4; display: flex; gap: 10px; align-items: flex-start;
+  }
+  .tip-banner button { flex: none; background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: .9rem; padding: 2px; }
+  .tip-banner button:hover { color: var(--ink); }
+
+  .icon-btn {
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-soft);
+    width: 42px; height: 42px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    box-shadow: var(--shadow); flex: none;
+  }
+  .icon-btn:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .icon-btn:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .icon-btn svg { width: 19px; height: 19px; }
+
+  /* ---------- Hero ---------- */
+  .hero-card {
+    position: relative;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 32px clamp(20px, 5vw, 44px) 0;
+    overflow: hidden;
+    background: var(--jungle);
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+  }
+  .hero-sun {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 45%, var(--accent) 0%, color-mix(in srgb, var(--accent) 70%, var(--sunset)) 60%, transparent 72%);
+    width: 300px; height: 300px;
+    top: 18%; right: 8%;
+    opacity: .95;
+    filter: blur(.5px);
+  }
+  @media (prefers-reduced-motion: no-preference) { .hero-sun { animation: sunfloat 9s ease-in-out infinite; } }
+  @keyframes sunfloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .hero-waves { position: absolute; inset-inline: 0; bottom: 0; width: 100%; height: 46%; display: block; }
+  .hero-inner {
+    position: relative; z-index: 2; width: 100%;
+    display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    padding-bottom: 30px;
+  }
+  .hero-count { display: flex; align-items: baseline; gap: 10px; }
+  .hero-number {
+    font-family: 'JetBrains Mono', monospace; font-weight: 600;
+    font-size: clamp(3.2rem, 9.5vw, 4.9rem); line-height: 1; color: #fff;
+    text-shadow: 0 2px 18px rgba(0,0,0,.18);
+  }
+  .hero-unit { font-size: 1.05rem; color: rgba(255,255,255,.92); font-weight: 600; }
+  .hero-meta { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; text-align: end; }
+  .hero-meta p { margin: 0; font-size: .86rem; color: rgba(255,255,255,.82); }
+  .hero-meta strong { color: #fff; font-weight: 700; }
+
+  section > h2 { font-size: 1.32rem; font-weight: 700; }
+  .section-sub { margin: 4px 0 14px; color: var(--ink-soft); font-size: .88rem; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  /* ---------- priority + due pills ---------- */
+  .priority-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; }
+  .priority-dot.p1 { background: var(--warn); }
+  .priority-dot.p2 { background: var(--ink-faint); }
+  .priority-dot.p3 { background: transparent; border: 1.5px solid var(--ink-faint); }
+
+  .due-pill {
+    font-size: .68rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    white-space: nowrap; font-family: 'JetBrains Mono', monospace;
+  }
+  .due-pill.overdue { background: var(--warn); color: #fff; }
+  .due-pill.today { background: var(--accent); color: var(--accent-ink); }
+  .due-pill.soon { background: var(--surface-3); color: var(--ink-soft); }
+  .due-pill.later { background: var(--surface-2); color: var(--ink-faint); }
+  .recur-pill {
+    font-size: .68rem; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    white-space: nowrap; background: var(--surface-2); color: var(--routine); border: 1px solid var(--border);
+  }
+  .streak-pill {
+    font-size: .68rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    white-space: nowrap; background: color-mix(in srgb, var(--sunset) 16%, transparent); color: var(--sunset);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ---------- Today list ---------- */
+  .today-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .today-empty { color: var(--ink-faint); font-size: .92rem; padding: 18px 0; }
+  .today-item {
+    display: flex; align-items: flex-start; gap: 11px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 12px 14px; box-shadow: var(--shadow);
+  }
+  .chip {
+    flex: none; font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+    color: #fff; letter-spacing: .01em; white-space: nowrap;
+  }
+  .today-item-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+  .today-item-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .today-item-title { font-size: .95rem; font-weight: 500; }
+  .today-item-notes { font-size: .82rem; color: var(--ink-soft); }
+
+  /* ---------- Checkbox ---------- */
+  .check {
+    flex: none; width: 21px; height: 21px; border-radius: 7px; border: 1.6px solid var(--ink-faint);
+    background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    margin-top: 1px; padding: 0;
+  }
+  .check svg { width: 12px; height: 12px; opacity: 0; transition: opacity .12s; stroke: #fff; }
+  .check.done { background: var(--good); border-color: var(--good); }
+  .check.done svg { opacity: 1; }
+
+  /* ---------- Weekly journal ---------- */
+  .week-nav { display: flex; align-items: center; gap: 10px; }
+  .week-nav-btn {
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-soft);
+    width: 34px; height: 34px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; box-shadow: var(--shadow);
+  }
+  .week-nav-btn:hover { color: var(--ink); }
+  .week-label { font-size: .84rem; color: var(--ink-soft); font-weight: 600; min-width: 108px; text-align: center; }
+
+  .weekly-grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 10px; }
+  @media (max-width: 860px) { .weekly-grid { grid-template-columns: 1fr; } }
+
+  .day-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow);
+    min-height: 86px;
+  }
+  .day-card.is-today { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent), var(--shadow); }
+  .day-head { display: flex; align-items: baseline; justify-content: space-between; }
+  .day-name { font-size: .78rem; font-weight: 700; color: var(--ink-soft); }
+  .day-card.is-today .day-name { color: var(--accent); }
+  .day-date { font-size: .72rem; color: var(--ink-faint); font-family: 'JetBrains Mono', monospace; }
+  .day-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .day-task { display: flex; align-items: flex-start; gap: 7px; }
+  .day-task-time { font-family: 'JetBrains Mono', monospace; font-size: .7rem; color: var(--ink-faint); flex: none; padding-top: 1px; min-width: 34px; }
+  .day-task-title { font-size: .8rem; line-height: 1.3; flex: 1; }
+  .day-task-title.done { text-decoration: line-through; color: var(--ink-faint); }
+  .day-task-x { flex: none; background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: .68rem; padding: 2px; }
+  .day-task-x:hover { color: var(--warn); }
+  .day-empty { font-size: .74rem; color: var(--ink-faint); padding: 4px 0; }
+  .day-add-btn {
+    background: none; border: 1px dashed var(--border); color: var(--ink-faint);
+    font-size: .72rem; padding: 5px; border-radius: 7px; cursor: pointer; margin-top: auto;
+  }
+  .day-add-btn:hover { color: var(--jungle); border-color: var(--jungle); }
+
+  /* ---------- Domain grid ---------- */
+  .domains-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .domain-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow); padding: 18px; display: flex; flex-direction: column; gap: 12px;
+    border-top: 3px solid var(--d-color);
+  }
+  .domain-head { display: flex; align-items: center; gap: 10px; }
+  .domain-icon {
+    width: 36px; height: 36px; border-radius: 11px; display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--d-color) 16%, transparent); color: var(--d-color); flex: none;
+  }
+  .domain-icon svg { width: 19px; height: 19px; }
+  .domain-name { font-weight: 700; font-size: 1.02rem; flex: 1; }
+  .domain-pct { font-family: 'JetBrains Mono', monospace; font-size: .82rem; color: var(--d-color); font-weight: 700; }
+  .progress-track { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--d-color); border-radius: 999px; transition: width .35s ease; }
+
+  .task-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+  .task-row { display: flex; align-items: flex-start; gap: 10px; padding: 7px 4px; border-radius: var(--radius-sm); }
+  .task-row:hover { background: var(--surface-2); }
+  .task-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .task-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .task-title { font-size: .89rem; line-height: 1.35; }
+  .task-title.done { color: var(--ink-faint); text-decoration: line-through; }
+  .task-notes { font-size: .78rem; color: var(--ink-soft); line-height: 1.3; }
+  .task-actions { display: flex; gap: 4px; flex: none; }
+  .task-mini-btn {
+    background: none; border: none; cursor: pointer; color: var(--ink-faint);
+    font-size: .68rem; padding: 4px 6px; border-radius: 6px; white-space: nowrap;
+  }
+  .task-mini-btn:hover { color: var(--jungle); background: color-mix(in srgb, var(--jungle) 10%, transparent); }
+  .task-mini-btn.del:hover { color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); }
+  .task-mini-btn.del.confirm { color: var(--warn); font-weight: 700; }
+
+  .domain-toggle { background: none; border: none; color: var(--ink-faint); font-size: .78rem; cursor: pointer; text-align: start; padding: 2px 0; }
+  .domain-toggle:hover { color: var(--ink-soft); }
+  .completed-list { display: none; flex-direction: column; gap: 3px; margin-top: 2px; }
+  .completed-list.open { display: flex; }
+
+  .inline-form {
+    display: none; flex-direction: column; gap: 6px; background: var(--surface-2);
+    border-radius: var(--radius-sm); padding: 10px; margin-top: 2px;
+  }
+  .inline-form.open { display: flex; }
+  .inline-form input, .inline-form select {
+    font-size: .85rem; padding: 7px 9px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--ink); width: 100%;
+  }
+  .inline-row { display: flex; gap: 6px; }
+  .inline-row > * { flex: 1; }
+  .inline-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  .btn {
+    font-size: .82rem; font-weight: 700; padding: 7px 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer;
+  }
+  .btn:hover { border-color: var(--ink-faint); }
+  .btn-primary { background: var(--jungle); border-color: var(--jungle); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost { background: none; border: none; color: var(--ink-soft); }
+  .btn-sm { padding: 5px 11px; font-size: .76rem; }
+
+  .add-trigger {
+    display: flex; align-items: center; gap: 6px; background: none; border: 1px dashed var(--border);
+    color: var(--ink-soft); font-size: .82rem; padding: 7px 10px; border-radius: var(--radius-sm);
+    cursor: pointer; margin-top: 2px;
+  }
+  .add-trigger:hover { color: var(--d-color, var(--jungle)); border-color: var(--d-color, var(--jungle)); }
+
+  /* ---------- Progress over time ---------- */
+  .progress-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .mini-progress { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; box-shadow: var(--shadow); }
+  .mini-progress-head { display: flex; justify-content: space-between; font-size: .82rem; margin-bottom: 8px; }
+  .mini-progress-head span:first-child { color: var(--ink-soft); }
+  .mini-progress-head span:last-child { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+
+  .weekly-chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 18px 20px 14px; }
+  .weekly-chart-title { font-size: .85rem; color: var(--ink-soft); margin-bottom: 12px; }
+  .weekly-bars { display: flex; align-items: flex-end; gap: 10px; height: 90px; }
+  .weekly-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .weekly-bar { width: 100%; max-width: 30px; background: var(--accent); border-radius: 5px 5px 2px 2px; min-height: 3px; }
+  .weekly-bar-label { font-size: .66rem; color: var(--ink-faint); font-family: 'JetBrains Mono', monospace; }
+  .weekly-empty-note { font-size: .8rem; color: var(--ink-faint); margin-top: 10px; }
+
+  /* ---------- Settings panel ---------- */
+  .settings-panel {
+    position: fixed; inset-inline-end: 16px; top: 16px; width: min(320px, calc(100vw - 32px));
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+    box-shadow: var(--shadow); padding: 16px; z-index: 20; display: flex; flex-direction: column; gap: 10px;
+    max-height: calc(100vh - 32px); overflow-y: auto;
+  }
+  .settings-panel h3 { font-size: .95rem; }
+  .settings-panel label { font-size: .78rem; color: var(--ink-soft); display: flex; flex-direction: column; gap: 4px; }
+  .settings-panel input { font-size: .88rem; padding: 7px 9px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); }
+  .settings-actions { display: flex; justify-content: space-between; margin-top: 4px; }
+  .settings-divider { height: 1px; background: var(--border); margin: 4px 0; }
+  .settings-row { display: flex; gap: 8px; }
+  .settings-row .btn { flex: 1; }
+  .local-note { font-size: .74rem; color: var(--ink-faint); line-height: 1.4; }
+  .backup-box { display: flex; flex-direction: column; gap: 6px; }
+  .backup-textarea {
+    width: 100%; font-family: 'JetBrains Mono', monospace; font-size: .68rem; direction: ltr; text-align: left;
+    border: 1px solid var(--border); border-radius: 7px; background: var(--surface-2); color: var(--ink);
+    padding: 8px; resize: vertical;
+  }
+
+  .footer { text-align: center; color: var(--ink-faint); font-size: .8rem; padding-top: 4px; }
+  [hidden] { display: none !important; }
+
+  @media (max-width: 480px) {
+    .hero-inner { flex-direction: column; align-items: flex-start; gap: 14px; }
+    .hero-meta { align-items: flex-start; text-align: start; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .domain-card, .hero-card, .day-card { animation: rise .5s ease both; }
+    .domain-card:nth-child(2) { animation-delay: .04s; }
+    .domain-card:nth-child(3) { animation-delay: .08s; }
+    .domain-card:nth-child(4) { animation-delay: .12s; }
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+
+<div class="app" dir="rtl" lang="he">
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-id">
+        <p class="eyebrow">מערכת ההפעלה של</p>
+        <h1 id="friendNameHeading">אייל</h1>
+        <span class="sync-indicator" id="syncIndicator"></span>
+      </div>
+      <button class="icon-btn" id="settingsToggle" aria-label="הגדרות" title="הגדרות">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.36.4.66.73.85.24.14.5.22.78.24H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="hero" aria-label="ספירה לאחור למעבר לג'מייקה">
+    <div class="hero-card">
+      <div class="hero-sun" aria-hidden="true"></div>
+      <svg class="hero-waves" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 40 C 60 15, 120 15, 180 40 S 300 65, 400 40 L400 90 L0 90 Z" fill="var(--sea)" opacity="0.55"></path>
+        <path d="M0 58 C 70 35, 130 35, 200 58 S 320 82, 400 58 L400 90 L0 90 Z" fill="var(--jungle)" opacity="0.85"></path>
+      </svg>
+      <div class="hero-inner">
+        <div class="hero-count">
+          <span class="hero-number mono" id="daysLeft">—</span>
+          <span class="hero-unit">ימים לג'מייקה</span>
+        </div>
+        <div class="hero-meta">
+          <p>יעד: <strong id="moveDateLabel" class="mono">—</strong></p>
+          <p>היום: <strong id="todayLabel" class="mono">—</strong></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="today-section" aria-label="מה הדבר הבא">
+    <div class="section-head"><h2>היום</h2></div>
+    <p class="section-sub">הכי דחוף וחשוב מכל תחום, ביחד</p>
+    <ul class="today-list" id="todayList"></ul>
+  </section>
+
+  <section class="weekly-section" aria-label="יומן שבועי">
+    <div class="section-head">
+      <h2>יומן השבוע</h2>
+      <div class="week-nav">
+        <button class="week-nav-btn" id="weekPrev" aria-label="שבוע קודם">›</button>
+        <span class="week-label" id="weekLabel"></span>
+        <button class="week-nav-btn" id="weekNext" aria-label="שבוע הבא">‹</button>
+      </div>
+    </div>
+    <p class="section-sub">משימות משובצות לפי יום ושעה</p>
+    <div class="weekly-grid" id="weeklyGrid"></div>
+  </section>
+
+  <section class="domains-grid" id="domainsGrid" aria-label="תחומים"></section>
+
+  <section class="progress-section" aria-label="התקדמות לאורך זמן">
+    <h2>התקדמות</h2>
+    <p class="section-sub">כמה כבר סגור בכל תחום, וקצב הביצוע שלך בשבועות האחרונים</p>
+    <div class="progress-overview" id="progressOverview"></div>
+    <div class="weekly-chart-card">
+      <p class="weekly-chart-title">משימות שהושלמו, לפי שבוע</p>
+      <div class="weekly-bars" id="weeklyBars"></div>
+      <p class="weekly-empty-note" id="weeklyEmptyNote" hidden>עוד אין נתונים — ברגע שתתחילו לסמן משימות, הקצב שלכם יופיע כאן.</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>נשמר על המכשיר תמיד, ומגובה אוטומטית לענן כשיש אינטרנט — בלי צורך בחשבון. נבנה בהדרגה — נוסיף עוד ככל שהחיים מתקדמים.</p>
+  </footer>
+
+  <div class="settings-panel" id="settingsPanel" hidden>
+    <h3>הגדרות</h3>
+    <label>שם
+      <input type="text" id="settingName" maxlength="30">
+    </label>
+    <label>תאריך המעבר
+      <input type="date" id="settingDate">
+    </label>
+    <div class="settings-actions">
+      <button class="btn btn-ghost" id="settingsClose">סגור</button>
+      <button class="btn btn-primary" id="settingsSave">שמור</button>
+    </div>
+    <div class="settings-divider"></div>
+    <p class="local-note">נשמר תמיד על המכשיר. אם נפתח מקישור אמיתי (לא קובץ מקומי) המידע גם מתגבה אוטומטית לענן, כך שאותו קישור מציג את אותם נתונים בכל מכשיר. ליתר ביטחון, אפשר גם לייצא גיבוי כאן ולהדביק אותו בייבוא במכשיר אחר.</p>
+    <div class="settings-row">
+      <button class="btn btn-sm" id="exportBtn">ייצוא גיבוי</button>
+      <button class="btn btn-sm" id="importBtn">ייבוא גיבוי</button>
+    </div>
+    <div class="backup-box" id="exportBox" hidden>
+      <p class="local-note">הטקסט מסומן מראש — Ctrl+C (או העתקה ממגע בנייד) ושמרו אותו איפשהו.</p>
+      <textarea class="backup-textarea" id="exportText" readonly rows="6"></textarea>
+    </div>
+    <div class="backup-box" id="importBox" hidden>
+      <p class="local-note">הדביקו כאן גיבוי שיוצא בעבר, ואז לחצו "טען".</p>
+      <textarea class="backup-textarea" id="importText" rows="6" placeholder="{...}"></textarea>
+      <div class="settings-row">
+        <button class="btn btn-ghost btn-sm" id="importCancel">ביטול</button>
+        <button class="btn btn-primary btn-sm" id="importLoad">טען</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "eyalOS.v1";
+
+  var STORAGE_OK = (function () {
+    try {
+      var k = "__eyalOS_test__";
+      localStorage.setItem(k, "1");
+      localStorage.removeItem(k);
+      return true;
+    } catch (e) { return false; }
+  })();
+
+  /* ---------------- cloud sync (best-effort; app works fully offline without it) ----------------
+     Uses jsonblob.com, a free anonymous JSON store with no login for us or the user.
+     A sync id lives in the URL (?sync=ID) so every device opening the SAME link reads/writes
+     the same record. If the network or the service is unavailable, everything below fails
+     silently and the app keeps working purely on localStorage, exactly as before. */
+  var CLOUD_BASE = "https://jsonblob.com/api/jsonBlob/";
+  var cloudId = null;
+  var cloudReady = false;
+  var cloudPushTimer = null;
+  var cloudAttempted = false;
+
+  function setSyncIndicator(mode) {
+    var node = document.getElementById("syncIndicator");
+    if (!node) return;
+    var labels = {
+      synced: "☁ מסונכרן",
+      local: "מקומי בלבד (בלי אינטרנט/ענן)",
+      syncing: "מסנכרן…",
+      error: "לא הצלחתי להתחבר לענן — ממשיך לשמור מקומית"
+    };
+    node.textContent = labels[mode] || "";
+    node.className = "sync-indicator sync-" + mode;
+  }
+
+  function initCloudSync() {
+    var urlId = null;
+    try { urlId = new URLSearchParams(location.search).get("sync"); } catch (e) {}
+    var savedId = null;
+    try { savedId = localStorage.getItem("eyalOS.syncId"); } catch (e) {}
+    cloudId = urlId || savedId;
+
+    if (cloudId) {
+      try { localStorage.setItem("eyalOS.syncId", cloudId); } catch (e) {}
+      if (!urlId) {
+        try { history.replaceState(null, "", location.pathname + "?sync=" + cloudId + location.hash); } catch (e) {}
+      }
+      cloudReady = true;
+      cloudPull();
+    } else if (location.protocol !== "file:") {
+      // only auto-provision a cloud record on a real hosted page; a local file:// copy stays offline-only
+      cloudCreate();
+    } else {
+      setSyncIndicator("local");
+    }
+  }
+
+  function cloudCreate() {
+    setSyncIndicator("syncing");
+    fetch(CLOUD_BASE.slice(0, -1), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state)
+    }).then(function (res) {
+      var loc = res.headers.get("Location") || res.headers.get("location");
+      if (!loc) throw new Error("no id in response");
+      var id = loc.split("/").pop();
+      cloudId = id;
+      try { localStorage.setItem("eyalOS.syncId", id); } catch (e) {}
+      try { history.replaceState(null, "", location.pathname + "?sync=" + id + location.hash); } catch (e) {}
+      cloudReady = true;
+      setSyncIndicator("synced");
+    }).catch(function () {
+      cloudReady = false;
+      setSyncIndicator("local");
+    });
+  }
+
+  function cloudPull() {
+    if (!cloudId) return;
+    setSyncIndicator("syncing");
+    fetch(CLOUD_BASE + cloudId, { headers: { "Accept": "application/json" } })
+      .then(function (res) { if (!res.ok) throw new Error("not found"); return res.json(); })
+      .then(function (remote) {
+        if (remote && Array.isArray(remote.tasks)) {
+          var localTime = (state && state._updatedAt) || 0;
+          var remoteTime = remote._updatedAt || 0;
+          if (remoteTime > localTime) {
+            state = remote;
+            state.settings = Object.assign({}, DEFAULT_SETTINGS, state.settings || {});
+            saveLocalOnly();
+            renderAll();
+          }
+        }
+        setSyncIndicator("synced");
+      })
+      .catch(function () { setSyncIndicator("error"); });
+  }
+
+  function cloudPush() {
+    if (!cloudId || !cloudReady) return;
+    clearTimeout(cloudPushTimer);
+    cloudPushTimer = setTimeout(function () {
+      setSyncIndicator("syncing");
+      fetch(CLOUD_BASE + cloudId, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(state)
+      }).then(function (res) { setSyncIndicator(res.ok ? "synced" : "error"); })
+        .catch(function () { setSyncIndicator("error"); });
+    }, 900);
+  }
+
+  var DOMAINS = [
+    { key: "jamaica", name: "ג'מייקה", color: "var(--jungle)",
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17c1.5 1.3 3 1.3 4.5 0s3-1.3 4.5 0 3 1.3 4.5 0 3-1.3 4.5 0"></path><path d="M2 12c1.5 1.3 3 1.3 4.5 0s3-1.3 4.5 0 3 1.3 4.5 0 3-1.3 4.5 0"></path><circle cx="12" cy="5" r="2.2"></circle></svg>' },
+    { key: "marley", name: "מארלי", color: "var(--sunset)",
+      icon: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="7" cy="8" r="1.7"></circle><circle cx="12" cy="6" r="1.7"></circle><circle cx="17" cy="8" r="1.7"></circle><circle cx="19.3" cy="12.3" r="1.6"></circle><path d="M12 11.2c-2.6 0-4.8 1.9-5.2 4.4-.3 1.9 1.1 3.4 2.9 3.1.9-.1 1.5-.6 2.3-.6s1.4.5 2.3.6c1.8.3 3.2-1.2 2.9-3.1-.4-2.5-2.6-4.4-5.2-4.4z"></path></svg>' },
+    { key: "music", name: "מוזיקה", color: "var(--violet)",
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 13v-2"></path><path d="M7 16V8"></path><path d="M11 19V5"></path><path d="M15 16V8"></path><path d="M19 13v-2"></path><path d="M21 12.5v-1"></path></svg>' },
+    { key: "work", name: "עבודה וכסף", color: "var(--sea)",
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="7.5" width="19" height="12" rx="2"></rect><path d="M8 7.5V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1.5"></path><path d="M2.5 12.5h19"></path><path d="M11 12.5v2"></path></svg>' },
+    { key: "routine", name: "שגרה", color: "var(--routine)",
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.36L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15.5 6.36L3 16"></path><path d="M3 21v-5h5"></path></svg>' }
+  ];
+
+  var DEFAULT_SETTINGS = { friendName: "אייל", moveDate: "2027-03-01" };
+
+  var SEED_TASKS = [
+    { id: "jam-1", domain: "jamaica", title: "לברר אם ויזה נדרשת לישראלים בכניסה לג'מייקה", notes: "יש הבדל בין ביקור קצר לבין מעבר קבע — לבדוק מול הנציגות של ג'מייקה", priority: 1 },
+    { id: "jam-2", domain: "jamaica", title: "להתחיל תהליך תושבות דרך PICA", notes: "דרכון בתוקף, תעודת לידה מאושרת, תעודת יושר, אישור מצב כלכלי, 2 תמונות פספורט, פרטי 2 ממליצים", priority: 1 },
+    { id: "jam-3", domain: "jamaica", title: "לברר על היתר עבודה — זה תהליך נפרד מהתושבות", notes: "תושבות לא כוללת אוטומטית היתר עבודה — מול Ministry of Labour, בדרך כלל מותנה בהצעת עבודה קיימת", priority: 2 },
+    { id: "jam-4", domain: "jamaica", title: "להזמין טיסה עם נחיתה בקינגסטון בלבד", notes: "נקודת הכניסה היחידה המאושרת לייבוא כלבים לארץ", priority: 2 },
+    { id: "jam-5", domain: "jamaica", title: "לבנות תקציב מעבר מלא", notes: "אריזה, מכירה/החסנה של תכולת הבית, הוצאות ראשוניות בג'מייקה", priority: 2 },
+    { id: "jam-6", domain: "jamaica", title: "לסדר ביטוח בריאות ורישום כתושב זר", notes: "Registration of Aliens — נדרש לשוהים מעל 6 חודשים", priority: 3 },
+    { id: "jam-7", domain: "jamaica", title: "לבחור אזור מגורים מתאים", notes: "אקלים, קרבה לים, קהילה, נגישות לעבודה", priority: 3 },
+    { id: "jam-8", domain: "jamaica", title: "לברר איך ממירים רישיון נהיגה", notes: "רישיון זר תקף רק 3 חודשים מהכניסה. אין המרה ישירה — צריך מבחן עיוני ומעשי, חוץ אם יש ותק של 6+ שנים על הרישיון הקיים", priority: 2 },
+    { id: "jam-9", domain: "jamaica", title: "לברר מה צריך כדי לפתוח חשבון בנק בג'מייקה", notes: "בד\"כ: דרכון, מסמך זיהוי נוסף, אישור כתובת, מכתב מעסיק/הכנסה, ו-2 ממליצים שמכירים אתכם 2+ שנים — רק בסניף פיזי", priority: 2 },
+    { id: "jam-10", domain: "jamaica", title: "ללמוד כמה מילים בפטואה ולהכיר את התרבות המקומית", notes: "מקל מאוד על ההשתלבות היומיומית", priority: 3 },
+    { id: "jam-11", domain: "jamaica", title: "לנסות למצוא מישהו שכבר גר שם ולדבר איתו", notes: "עצה ממקור ראשון שווה יותר מכל חיפוש בגוגל", priority: 3 },
+
+    { id: "mar-1", domain: "marley", title: "למפות את סף חרדת הנטישה הנוכחי של מארלי", notes: "לצאת לכמה שניות בלי טריגרים (מפתחות/נעליים) ולמדוד תגובה — נקודת הפתיחה לאימון", priority: 1 },
+    { id: "mar-2", domain: "marley", title: "להשעות בינתיים היעדרויות ארוכות מהבית", notes: "לא לתת לו לחוות שוב את שיא הפאניקה בזמן שבונים סבלנות מאפס", priority: 1 },
+    { id: "mar-3", domain: "marley", title: "לבנות אסוציאציה חיובית לארגז/כלוב", notes: "אוכל ומנוחה בפנים עם דלת פתוחה — לפני שסוגרים דלת בכלל", priority: 1 },
+    { id: "mar-4", domain: "marley", title: "להעלות זמן היעדרות בהדרגה, בקצב שלו", notes: "קידמה לא ליניארית — ימי גשם או שינוי שגרה ישפיעו, זו לא נסיגה אמיתית", priority: 2 },
+    { id: "mar-5", domain: "marley", title: "להתרגל בהדרגה לזמן שהייה סגור בארגז", notes: "המטרה: להתאים בסוף למשך הטיסה לג'מייקה", priority: 2 },
+    { id: "mar-6", domain: "marley", title: "להשתיל שבב זיהוי למארלי", notes: "שבב בתקן בינלאומי ISO 11784/11785 — חובה כצעד ראשון לפני כל שאר תהליך היבוא", priority: 1 },
+    { id: "mar-7", domain: "marley", title: "לחסן את מארלי נגד כלבת בזמן הנכון", notes: "לא פחות מ-3 ולא יותר מ-12 חודשים לפני הכניסה לג'מייקה", priority: 2 },
+    { id: "mar-8", domain: "marley", title: "לבצע בדיקת דם לנוגדני כלבת", notes: "מעבדה מאושרת OIE/WHO, 3–12 חודשים לפני הכניסה, ולפחות 30 יום אחרי החיסון", priority: 2 },
+    { id: "mar-9", domain: "marley", title: "לתת טיפול נגד טפילים פנימיים", notes: "שני טיפולים בהפרש 14+ יום, האחרון עד 7 ימים לפני הטיסה", priority: 2 },
+    { id: "mar-10", domain: "marley", title: "לתת טיפול נגד טפילים חיצוניים", notes: "שני טיפולים בהפרש 14 יום, האחרון עד 48 שעות לפני הטיסה", priority: 2 },
+    { id: "mar-11", domain: "marley", title: "להוציא אישור יבוא רשמי לכלב", notes: "ממשרד החקלאות של ג'מייקה, בתוקף 3 חודשים בלבד — לתזמן בקפידה מול תאריך הטיסה בפועל", priority: 2 },
+    { id: "mar-12", domain: "marley", title: "להוציא תעודת בריאות לפני הטיסה", notes: "עד 10 ימים לפני הטיסה, חתומה ע\"י וטרינר מוסמך מטעם המדינה", priority: 3 },
+    { id: "mar-13", domain: "marley", title: "לתאם מראש עם הווטרינר בשדה התעופה בקינגסטון", notes: "יתכן הסגר של עד 14 יום במתקן Plumb Point אם משהו לא תקין", priority: 3 },
+    { id: "mar-14", domain: "marley", title: "להמשיך לתרגל פקודות מתקדמות ומשחקי חשיבה", notes: "שומר עליו עסוק ורגוע ומקטין סיכוי להרס או חרדה כשהסביבה מתחלפת", priority: 2 },
+    { id: "mar-15", domain: "marley", title: "לחשוף אותו בהדרגה לרעשים וסביבות חדשות", notes: "הכנה נפשית לשינוי גדול — טיסה, בית חדש, אקלים אחר", priority: 2 },
+    { id: "mar-16", domain: "marley", title: "למצוא מראש וטרינר בג'מייקה להמשך טיפול", notes: "כדאי שיהיה מוכן לפני הנחיתה, לא אחריה", priority: 3 },
+
+    { id: "mus-1", domain: "music", title: "לסיים את קורס הבית / המבוא לאבלטון", notes: "", priority: 1 },
+    { id: "mus-2", domain: "music", title: "להשלים 3 טראקים ברמה טובה", notes: "תנאי סף לריאיון הקבלה לקורס המתקדם", priority: 1 },
+    { id: "mus-3", domain: "music", title: "להירשם לריאיון קבלה מול יועץ אקדמי ב-BPM", notes: "", priority: 2 },
+    { id: "mus-4", domain: "music", title: "להתחיל קורס מיקס ומאסטרינג מתקדם", notes: "16 מפגשים, 3 שעות בשבוע, כ-4 חודשים — כדאי שיסתיים או יתקדם משמעותית לפני המעבר", priority: 2 },
+    { id: "mus-5", domain: "music", title: "להקים חדר עבודה עם טיפול אקוסטי בסיסי", notes: "נדרש כדי לעבוד ברמה טובה מהבית", priority: 2 },
+    { id: "mus-6", domain: "music", title: "לבנות פורטפוליו מיקס לפני המעבר", notes: "בסיס לעבודה עצמאית בג'מייקה", priority: 3 },
+    { id: "mus-7", domain: "music", title: "לבחור סאונד/סגנון חתימה משלי", notes: "מתמקדים = בולטים יותר, גם מקצועית וגם עסקית", priority: 3 },
+    { id: "mus-8", domain: "music", title: "לתרגל ניתוח מיקס על שירי רפרנס", notes: "לבחור 5-10 שירים ברמה גבוהה ולנתח למה הם עובדים — תרגול קבוע בתעשייה", priority: 2 },
+    { id: "mus-9", domain: "music", title: "להתחיל לקחת פרויקטי מיקס אמיתיים", notes: "גם במחיר סמלי בהתחלה — כל פרויקט בונה ניסיון ותיק עבודות", priority: 2 },
+
+    { id: "wrk-1", domain: "work", title: "להגדיר את שני מסלולי ההכנסה", notes: "הוראת תופים לילדים + אילוף כלבים למשפחות", priority: 1 },
+    { id: "wrk-2", domain: "work", title: "לבנות מבנה שיעור והצעת מחיר להוראת תופים", notes: "גילאים, תדירות, משך שיעור", priority: 2 },
+    { id: "wrk-3", domain: "work", title: "לבנות חבילות שירות לאילוף כלבים למשפחות", notes: "חבילת בסיס מול מתקדם, ביקורי בית", priority: 2 },
+    { id: "wrk-4", domain: "work", title: "לפתוח נוכחות דיגיטלית לשני התחומים", notes: "עמוד או פרופיל בסיסי להצגת השירותים", priority: 2 },
+    { id: "wrk-5", domain: "work", title: "לבדוק רישוי נדרש לעבודה עצמאית בג'מייקה", notes: "בנפרד מהיתר עבודה רגיל", priority: 3 },
+    { id: "wrk-6", domain: "work", title: "לגבש כרית ביטחון כלכלית לחודשים הראשונים", notes: "", priority: 3 },
+    { id: "wrk-7", domain: "work", title: "לאסוף המלצות מתלמידים ולקוחות ראשונים", notes: "הכלי השיווקי הכי חזק בהתחלה", priority: 2 },
+    { id: "wrk-8", domain: "work", title: "לתמחר לפי השוק בג'מייקה, לא לפי ישראל", notes: "לבדוק מחירים מקומיים לפני שקובעים תעריף", priority: 2 },
+    { id: "wrk-9", domain: "work", title: "לבנות תוכנית שיווק פשוטה", notes: "רשתות חברתיות, מפה לאוזן, שיתופי פעולה עם מאמנים/מורים אחרים באזור", priority: 3 },
+
+    { id: "rt-1", domain: "routine", title: "טיול בוקר למארלי", notes: "", priority: 1, recur: "daily" },
+    { id: "rt-2", domain: "routine", title: "טיול ערב למארלי", notes: "", priority: 1, recur: "daily" },
+    { id: "rt-3", domain: "routine", title: "ארוחות סדירות", notes: "לשמור על סדר יום קבוע", priority: 2, recur: "daily" },
+    { id: "rt-4", domain: "routine", title: "קניות וניקיון דירה", notes: "", priority: 2, recur: "weekly" },
+    { id: "rt-5", domain: "routine", title: "למשוך שקית", notes: "", priority: 3, recur: "weekly" }
+  ].map(function (t) {
+    return Object.assign({ done: false, dueDate: null, dueTime: null, recur: null, lastDoneAt: null, doneLog: [], createdAt: new Date().toISOString(), completedAt: null }, t);
+  });
+
+  var state = null;
+
+  function defaultState() {
+    return { settings: Object.assign({}, DEFAULT_SETTINGS), tasks: SEED_TASKS.map(function (t) { return Object.assign({}, t); }) };
+  }
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
+      var parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.tasks)) return defaultState();
+      parsed.settings = Object.assign({}, DEFAULT_SETTINGS, parsed.settings || {});
+      // additive migration: bring in any newly-added seed tasks (new domains/items) without touching existing progress
+      var existingIds = {};
+      parsed.tasks.forEach(function (t) { existingIds[t.id] = true; });
+      SEED_TASKS.forEach(function (st) {
+        if (!existingIds[st.id]) parsed.tasks.push(Object.assign({}, st));
+      });
+      // backfill doneLog for recurring tasks saved before streak-tracking existed,
+      // seeding one entry from their last known completion so a streak isn't lost
+      parsed.tasks.forEach(function (t) {
+        if (t.recur && !Array.isArray(t.doneLog)) {
+          t.doneLog = t.lastDoneAt ? [periodKeyFor(t.recur, t.lastDoneAt.slice(0, 10))] : [];
+        }
+      });
+      return parsed;
+    } catch (e) { return defaultState(); }
+  }
+
+  function saveLocalOnly() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { showStorageWarning(); }
+  }
+
+  function saveState() {
+    state._updatedAt = Date.now();
+    saveLocalOnly();
+    cloudPush();
+  }
+
+  function showStorageWarning() {
+    if (document.getElementById("storageWarning")) return;
+    var b = document.createElement("div");
+    b.id = "storageWarning";
+    b.setAttribute("dir", "rtl");
+    b.className = "tip-banner";
+    b.style.borderColor = "var(--warn)";
+    b.style.color = "var(--warn)";
+    b.textContent = "הדפדפן חוסם שמירת מידע (למשל מצב גלישה פרטית) — השינויים לא יישמרו אחרי סגירת הדף. פתחו את הדף במצב גלישה רגיל.";
+    document.body.appendChild(b);
+  }
+
+  function el(tag, cls, attrs) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (attrs) for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function bidiRender(container, text) {
+    container.textContent = "";
+    if (!text) return;
+    var re = /([A-Za-z0-9][A-Za-z0-9\/.\-: ]*[A-Za-z0-9]|[A-Za-z0-9])/g;
+    var lastIndex = 0, m;
+    while ((m = re.exec(text))) {
+      if (m.index > lastIndex) container.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
+      var b = el("bdi");
+      b.textContent = m[0];
+      container.appendChild(b);
+      lastIndex = m.index + m[0].length;
+    }
+    if (lastIndex < text.length) container.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+
+  function domainOf(key) { return DOMAINS.filter(function (d) { return d.key === key; })[0]; }
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function dateToISO(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function todayISO() { return dateToISO(new Date()); }
+  function fmtDateHe(iso) { if (!iso) return "—"; var p = iso.split("-"); return p[2] + "." + p[1] + "." + p[0]; }
+  function daysBetween(a, b) {
+    var A = new Date(a + "T00:00:00"), B = new Date(b + "T00:00:00");
+    return Math.round((B - A) / 86400000);
+  }
+  var WEEKDAY_NAMES = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+
+  /* ---------------- recurring habits ---------------- */
+  function weekStartISOFor(iso) {
+    var d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() - d.getDay());
+    return dateToISO(d);
+  }
+  // Recurring tasks (routine habits) don't use done/completedAt — they use lastDoneAt,
+  // and "done" is computed relative to the current day/week so they auto-reset each period.
+  function isDone(t, todayS) {
+    if (!t.recur) return t.done;
+    if (!t.lastDoneAt) return false;
+    var lastDate = t.lastDoneAt.slice(0, 10);
+    if (t.recur === "daily") return lastDate === todayS;
+    return weekStartISOFor(lastDate) === weekStartISOFor(todayS);
+  }
+  function periodKeyFor(recur, dateISO) {
+    return recur === "weekly" ? weekStartISOFor(dateISO) : dateISO;
+  }
+  function shiftPeriod(key, deltaPeriods, recur) {
+    var d = new Date(key + "T00:00:00");
+    d.setDate(d.getDate() + deltaPeriods * (recur === "weekly" ? 7 : 1));
+    return dateToISO(d);
+  }
+  // Current consecutive streak of completed periods (days for daily habits, weeks for weekly),
+  // counting back from today (or from yesterday/last week if today's period isn't done yet,
+  // so the streak doesn't visually break mid-period).
+  function computeStreak(t, todayS) {
+    if (!t.recur || !t.doneLog || !t.doneLog.length) return 0;
+    var set = {};
+    t.doneLog.forEach(function (k) { set[k] = true; });
+    var todayKey = periodKeyFor(t.recur, todayS);
+    var cursor = set[todayKey] ? todayKey : shiftPeriod(todayKey, -1, t.recur);
+    var streak = 0;
+    while (set[cursor]) { streak++; cursor = shiftPeriod(cursor, -1, t.recur); }
+    return streak;
+  }
+
+  /* ---------------- scoring: priority + urgency ---------------- */
+  function urgencyBucket(t, todayS) {
+    if (t.recur === "daily") return 1;
+    if (t.recur === "weekly") return 2;
+    if (!t.dueDate) return 4;
+    var diff = daysBetween(todayS, t.dueDate);
+    if (diff < 0) return 0;
+    if (diff === 0) return 1;
+    if (diff <= 6) return 2;
+    return 3;
+  }
+  function taskScore(t, todayS) {
+    return [urgencyBucket(t, todayS), t.priority, t.dueTime || "99:99", t.dueDate || "9999-99-99", t.createdAt];
+  }
+  function cmpScore(a, b) {
+    for (var i = 0; i < a.length; i++) { if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1; }
+    return 0;
+  }
+  function sortByScore(list, todayS) {
+    return list.slice().sort(function (a, b) { return cmpScore(taskScore(a, todayS), taskScore(b, todayS)); });
+  }
+
+  function duePill(t, todayS) {
+    if (t.recur) {
+      var rp = el("span", "recur-pill");
+      rp.textContent = t.recur === "daily" ? "כל יום" : "פעם בשבוע";
+      return rp;
+    }
+    if (!t.dueDate) return null;
+    var bucket = urgencyBucket(t, todayS);
+    var span = el("span", "due-pill " + (bucket === 0 ? "overdue" : bucket === 1 ? "today" : bucket === 2 ? "soon" : "later"));
+    var timeStr = t.dueTime ? " " + t.dueTime : "";
+    if (bucket === 0) span.textContent = "באיחור";
+    else if (bucket === 1) span.textContent = "היום" + timeStr;
+    else span.textContent = fmtDateHe(t.dueDate) + timeStr;
+    return span;
+  }
+  function streakBadge(t, todayS) {
+    if (!t.recur) return null;
+    var streak = computeStreak(t, todayS);
+    if (!streak) return null;
+    var b = el("span", "streak-pill");
+    b.textContent = "🔥 " + streak;
+    b.title = t.recur === "daily" ? (streak + " ימים ברצף") : (streak + " שבועות ברצף");
+    return b;
+  }
+
+  /* ---------------- hero ---------------- */
+  function renderHero() {
+    document.getElementById("friendNameHeading").textContent = state.settings.friendName || "אייל";
+    document.getElementById("moveDateLabel").textContent = fmtDateHe(state.settings.moveDate);
+    document.getElementById("todayLabel").textContent = fmtDateHe(todayISO());
+    var d = daysBetween(todayISO(), state.settings.moveDate);
+    document.getElementById("daysLeft").textContent = d >= 0 ? d : 0;
+  }
+
+  /* ---------------- today list ---------------- */
+  function buildCheck(t, todayS) {
+    var done = isDone(t, todayS);
+    var btn = el("button", "check" + (done ? " done" : ""), { "aria-label": "סמן כבוצע" });
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+    btn.addEventListener("click", function () { toggleTask(t.id); });
+    return btn;
+  }
+
+  function renderToday() {
+    var list = document.getElementById("todayList");
+    list.textContent = "";
+    var todayS = todayISO();
+    var byDomain = DOMAINS.map(function (d) {
+      return sortByScore(state.tasks.filter(function (t) { return !isDone(t, todayS) && t.domain === d.key; }), todayS);
+    });
+    var top = [], round = 0;
+    while (top.length < 7) {
+      var added = false;
+      for (var i = 0; i < byDomain.length; i++) {
+        if (byDomain[i][round]) { top.push(byDomain[i][round]); added = true; if (top.length >= 7) break; }
+      }
+      if (!added) break;
+      round++;
+    }
+    if (!top.length) {
+      var empty = el("li", "today-empty"); empty.textContent = "הכל סגור להיום. כל הכבוד.";
+      list.appendChild(empty); return;
+    }
+    top.forEach(function (t) {
+      var d = domainOf(t.domain);
+      var li = el("li", "today-item");
+      var check = buildCheck(t, todayS);
+      var chip = el("span", "chip"); chip.style.background = d.color; chip.textContent = d.name;
+      var body = el("div", "today-item-body");
+      var topRow = el("div", "today-item-top");
+      var title = el("span", "today-item-title"); bidiRender(title, t.title);
+      topRow.appendChild(title);
+      var pill = duePill(t, todayS); if (pill) topRow.appendChild(pill);
+      var streak = streakBadge(t, todayS); if (streak) topRow.appendChild(streak);
+      body.appendChild(topRow);
+      if (t.notes) { var notes = el("div", "today-item-notes"); bidiRender(notes, t.notes); body.appendChild(notes); }
+      li.appendChild(check); li.appendChild(chip); li.appendChild(body);
+      list.appendChild(li);
+    });
+  }
+
+  /* ---------------- weekly journal ---------------- */
+  var weekOffset = 0;
+
+  function weekStart(offset) {
+    var d = new Date();
+    d.setHours(0,0,0,0);
+    d.setDate(d.getDate() - d.getDay() + offset * 7);
+    return d;
+  }
+
+  function renderWeekly() {
+    var start = weekStart(weekOffset);
+    var end = new Date(start); end.setDate(end.getDate() + 6);
+    document.getElementById("weekLabel").textContent = weekOffset === 0
+      ? "השבוע הזה"
+      : (pad2(start.getDate()) + "." + pad2(start.getMonth() + 1) + " – " + pad2(end.getDate()) + "." + pad2(end.getMonth() + 1));
+
+    var grid = document.getElementById("weeklyGrid");
+    grid.textContent = "";
+    var todayS = todayISO();
+
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(start); d.setDate(d.getDate() + i);
+      var iso = dateToISO(d);
+      var card = el("div", "day-card" + (iso === todayS ? " is-today" : ""));
+      var head = el("div", "day-head");
+      var name = el("span", "day-name"); name.textContent = WEEKDAY_NAMES[d.getDay()];
+      var dateEl = el("span", "day-date"); dateEl.textContent = pad2(d.getDate()) + "." + pad2(d.getMonth() + 1);
+      head.appendChild(name); head.appendChild(dateEl);
+      card.appendChild(head);
+
+      var dayTasks = sortByScore(state.tasks.filter(function (t) { return t.dueDate === iso; }), todayS);
+      var tasksList = el("ul", "day-tasks");
+      if (!dayTasks.length) {
+        var emptyP = el("p", "day-empty"); emptyP.textContent = "אין משימות";
+        tasksList.appendChild(emptyP);
+      } else {
+        dayTasks.forEach(function (t) {
+          var dm = domainOf(t.domain);
+          var row = el("li", "day-task");
+          var time = el("span", "day-task-time mono"); time.textContent = t.dueTime || "—";
+          var titleEl = el("span", "day-task-title" + (t.done ? " done" : ""));
+          titleEl.style.borderInlineStart = "2.5px solid " + dm.color;
+          titleEl.style.paddingInlineStart = "5px";
+          bidiRender(titleEl, t.title);
+          var x = el("button", "day-task-x", { "aria-label": "בטל שיבוץ" }); x.textContent = "✕";
+          x.addEventListener("click", function (tid) { return function () { updateTask(tid, { dueDate: null, dueTime: null }); }; }(t.id));
+          row.appendChild(time); row.appendChild(titleEl); row.appendChild(x);
+          tasksList.appendChild(row);
+        });
+      }
+      card.appendChild(tasksList);
+
+      var addBtn = el("button", "day-add-btn"); addBtn.textContent = "+ הוסף למשימה ליום זה";
+      var form = buildDayAddForm(iso);
+      addBtn.addEventListener("click", function (f) { return function () { f.classList.toggle("open"); if (f.classList.contains("open")) f.querySelector("input").focus(); }; }(form));
+      card.appendChild(addBtn);
+      card.appendChild(form);
+
+      grid.appendChild(card);
+    }
+  }
+
+  function buildDayAddForm(iso) {
+    var form = el("div", "inline-form");
+    var titleInput = el("input", "", { type: "text", placeholder: "משימה חדשה…", maxlength: "140" });
+    var row = el("div", "inline-row");
+    var domainSelect = el("select");
+    DOMAINS.forEach(function (d) { var o = el("option"); o.value = d.key; o.textContent = d.name; domainSelect.appendChild(o); });
+    var timeInput = el("input", "", { type: "time" });
+    row.appendChild(domainSelect); row.appendChild(timeInput);
+    var actions = el("div", "inline-actions");
+    var cancel = el("button", "btn btn-ghost btn-sm"); cancel.textContent = "ביטול";
+    var save = el("button", "btn btn-primary btn-sm"); save.textContent = "הוסף";
+    cancel.addEventListener("click", function () { form.classList.remove("open"); titleInput.value = ""; });
+    save.addEventListener("click", function () {
+      var val = titleInput.value.trim();
+      if (!val) { titleInput.focus(); return; }
+      addTask(domainSelect.value, val, iso, timeInput.value || null, 2);
+      titleInput.value = ""; timeInput.value = "";
+      form.classList.remove("open");
+    });
+    titleInput.addEventListener("keydown", function (e) { if (e.key === "Enter") save.click(); });
+    actions.appendChild(cancel); actions.appendChild(save);
+    form.appendChild(titleInput); form.appendChild(row); form.appendChild(actions);
+    return form;
+  }
+
+  /* ---------------- domain cards ---------------- */
+  function renderDomains() {
+    var grid = document.getElementById("domainsGrid");
+    grid.textContent = "";
+    var todayS = todayISO();
+    DOMAINS.forEach(function (d) {
+      var tasks = state.tasks.filter(function (t) { return t.domain === d.key; });
+      var open = sortByScore(tasks.filter(function (t) { return !isDone(t, todayS); }), todayS);
+      var done = tasks.filter(function (t) { return isDone(t, todayS); });
+      var pct = tasks.length ? Math.round((done.length / tasks.length) * 100) : 0;
+
+      var card = el("div", "domain-card");
+      card.style.setProperty("--d-color", d.color);
+
+      var head = el("div", "domain-head");
+      var icon = el("div", "domain-icon"); icon.innerHTML = d.icon;
+      var name = el("div", "domain-name"); name.textContent = d.name;
+      var pctEl = el("div", "domain-pct"); pctEl.textContent = pct + "%";
+      head.appendChild(icon); head.appendChild(name); head.appendChild(pctEl);
+
+      var track = el("div", "progress-track");
+      var fill = el("div", "progress-fill"); fill.style.width = pct + "%";
+      track.appendChild(fill);
+
+      var openList = el("ul", "task-list");
+      open.forEach(function (t) { openList.appendChild(buildTaskRow(t, todayS)); });
+
+      card.appendChild(head); card.appendChild(track); card.appendChild(openList);
+
+      if (done.length) {
+        var toggle = el("button", "domain-toggle");
+        toggle.textContent = "הצג " + done.length + " שהושלמו";
+        var completedList = el("ul", "task-list completed-list");
+        done.forEach(function (t) { completedList.appendChild(buildTaskRow(t, todayS)); });
+        toggle.addEventListener("click", function () {
+          completedList.classList.toggle("open");
+          toggle.textContent = completedList.classList.contains("open") ? "הסתר שהושלמו" : "הצג " + done.length + " שהושלמו";
+        });
+        card.appendChild(toggle); card.appendChild(completedList);
+      }
+
+      var addTrigger = el("button", "add-trigger"); addTrigger.textContent = "+ הוסף משימה";
+      var addForm = buildDomainAddForm(d);
+      addTrigger.addEventListener("click", function () {
+        addForm.classList.toggle("open");
+        if (addForm.classList.contains("open")) addForm.querySelector("input").focus();
+      });
+      card.appendChild(addTrigger); card.appendChild(addForm);
+
+      grid.appendChild(card);
+    });
+  }
+
+  function buildTaskRow(t, todayS) {
+    var row = el("li", "task-row");
+    var check = buildCheck(t, todayS);
+    var body = el("div", "task-body");
+    var topRow = el("div", "task-top");
+    var title = el("span", "task-title" + (isDone(t, todayS) ? " done" : "")); bidiRender(title, t.title);
+    topRow.appendChild(title);
+    var pill = duePill(t, todayS); if (pill) topRow.appendChild(pill);
+    var streak = streakBadge(t, todayS); if (streak) topRow.appendChild(streak);
+    body.appendChild(topRow);
+    if (t.notes) { var notes = el("div", "task-notes"); bidiRender(notes, t.notes); body.appendChild(notes); }
+
+    var actions = el("div", "task-actions");
+    if (!t.recur) {
+      var schedForm = buildScheduleForm(t);
+      body.appendChild(schedForm);
+      var schedBtn = el("button", "task-mini-btn"); schedBtn.textContent = "תזמון";
+      schedBtn.addEventListener("click", function () { schedForm.classList.toggle("open"); });
+      actions.appendChild(schedBtn);
+    }
+    var del = el("button", "task-mini-btn del"); del.textContent = "מחק";
+    del.addEventListener("click", function () {
+      if (del.classList.contains("confirm")) { deleteTask(t.id); }
+      else {
+        del.classList.add("confirm"); del.textContent = "לאשר?";
+        setTimeout(function () { del.classList.remove("confirm"); del.textContent = "מחק"; }, 3000);
+      }
+    });
+    actions.appendChild(del);
+
+    row.appendChild(check); row.appendChild(body); row.appendChild(actions);
+    return row;
+  }
+
+  function buildScheduleForm(t) {
+    var form = el("div", "inline-form");
+    var row = el("div", "inline-row");
+    var dateInput = el("input", "", { type: "date" }); dateInput.value = t.dueDate || "";
+    var timeInput = el("input", "", { type: "time" }); timeInput.value = t.dueTime || "";
+    row.appendChild(dateInput); row.appendChild(timeInput);
+    var actions = el("div", "inline-actions");
+    var clear = el("button", "btn btn-ghost btn-sm"); clear.textContent = "נקה שיבוץ";
+    var save = el("button", "btn btn-primary btn-sm"); save.textContent = "שמור";
+    clear.addEventListener("click", function () { updateTask(t.id, { dueDate: null, dueTime: null }); form.classList.remove("open"); });
+    save.addEventListener("click", function () {
+      updateTask(t.id, { dueDate: dateInput.value || null, dueTime: timeInput.value || null });
+      form.classList.remove("open");
+    });
+    actions.appendChild(clear); actions.appendChild(save);
+    form.appendChild(row); form.appendChild(actions);
+    return form;
+  }
+
+  function buildDomainAddForm(d) {
+    var form = el("div", "inline-form");
+    var titleInput = el("input", "", { type: "text", placeholder: "משימה חדשה ב" + d.name + "…", maxlength: "140" });
+    var row2 = el("div", "inline-row");
+    var dateInput = el("input", "", { type: "date" });
+    var timeInput = el("input", "", { type: "time" });
+    var prioSelect = el("select");
+    [["1", "דחוף"], ["2", "רגיל"], ["3", "בהמשך"]].forEach(function (p) {
+      var opt = el("option"); opt.value = p[0]; opt.textContent = p[1]; if (p[0] === "2") opt.selected = true;
+      prioSelect.appendChild(opt);
+    });
+    row2.appendChild(dateInput); row2.appendChild(timeInput); row2.appendChild(prioSelect);
+    var row3 = el("div", "inline-row");
+    var recurSelect = el("select");
+    [["", "חד פעמי"], ["daily", "חוזר כל יום"], ["weekly", "חוזר פעם בשבוע"]].forEach(function (p) {
+      var opt = el("option"); opt.value = p[0]; opt.textContent = p[1]; recurSelect.appendChild(opt);
+    });
+    row3.appendChild(recurSelect);
+    recurSelect.addEventListener("change", function () {
+      var recurring = !!recurSelect.value;
+      dateInput.disabled = recurring; timeInput.disabled = recurring;
+      if (recurring) { dateInput.value = ""; timeInput.value = ""; }
+    });
+    var actions = el("div", "inline-actions");
+    var cancel = el("button", "btn btn-ghost btn-sm"); cancel.textContent = "ביטול";
+    var save = el("button", "btn btn-primary btn-sm"); save.textContent = "הוסף";
+    cancel.addEventListener("click", function () { form.classList.remove("open"); titleInput.value = ""; });
+    save.addEventListener("click", function () {
+      var val = titleInput.value.trim();
+      if (!val) { titleInput.focus(); return; }
+      addTask(d.key, val, dateInput.value || null, timeInput.value || null, Number(prioSelect.value), recurSelect.value || null);
+      titleInput.value = ""; dateInput.value = ""; timeInput.value = ""; prioSelect.value = "2";
+      recurSelect.value = ""; dateInput.disabled = false; timeInput.disabled = false;
+      form.classList.remove("open");
+    });
+    titleInput.addEventListener("keydown", function (e) { if (e.key === "Enter") save.click(); });
+    actions.appendChild(cancel); actions.appendChild(save);
+    form.appendChild(titleInput); form.appendChild(row2); form.appendChild(row3); form.appendChild(actions);
+    return form;
+  }
+
+  /* ---------------- progress ---------------- */
+  function renderProgress() {
+    var overview = document.getElementById("progressOverview");
+    overview.textContent = "";
+    var todayS = todayISO();
+    DOMAINS.forEach(function (d) {
+      var tasks = state.tasks.filter(function (t) { return t.domain === d.key; });
+      var done = tasks.filter(function (t) { return isDone(t, todayS); }).length;
+      var pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+      var card = el("div", "mini-progress");
+      var head = el("div", "mini-progress-head");
+      var left = el("span"); left.textContent = d.name;
+      var right = el("span", "mono"); right.style.color = d.color; right.textContent = pct + "%";
+      head.appendChild(left); head.appendChild(right);
+      var track = el("div", "progress-track");
+      var fill = el("div", "progress-fill"); fill.style.width = pct + "%"; fill.style.background = d.color;
+      track.appendChild(fill);
+      card.appendChild(head); card.appendChild(track);
+      overview.appendChild(card);
+    });
+
+    var routineTasks = state.tasks.filter(function (t) { return t.recur; });
+    if (routineTasks.length) {
+      var totalCheckins = routineTasks.reduce(function (sum, t) { return sum + (t.doneLog ? t.doneLog.length : 0); }, 0);
+      var bestStreak = routineTasks.reduce(function (max, t) { return Math.max(max, computeStreak(t, todayS)); }, 0);
+      var streakCard = el("div", "mini-progress");
+      var sHead = el("div", "mini-progress-head");
+      var sLeft = el("span"); sLeft.textContent = "עקביות בשגרה";
+      var sRight = el("span", "mono"); sRight.style.color = "var(--routine)"; sRight.textContent = "🔥 " + bestStreak;
+      sHead.appendChild(sLeft); sHead.appendChild(sRight);
+      var sNote = el("p", "section-sub"); sNote.style.margin = "2px 0 0"; sNote.style.fontSize = ".76rem";
+      sNote.textContent = totalCheckins + " סימונים בסך הכל, הרצף הכי ארוך כרגע";
+      streakCard.appendChild(sHead); streakCard.appendChild(sNote);
+      overview.appendChild(streakCard);
+    }
+
+    renderWeeklyChart();
+  }
+
+  function isoWeekStartDate(d) {
+    var date = new Date(d); var day = date.getDay();
+    date.setDate(date.getDate() - day); date.setHours(0,0,0,0);
+    return date;
+  }
+
+  function renderWeeklyChart() {
+    var container = document.getElementById("weeklyBars");
+    container.textContent = "";
+    var now = new Date();
+    var weeks = [];
+    for (var i = 7; i >= 0; i--) { var d = new Date(now); d.setDate(d.getDate() - i * 7); weeks.push(isoWeekStartDate(d)); }
+    var counts = weeks.map(function (wStart) {
+      var wEnd = new Date(wStart); wEnd.setDate(wEnd.getDate() + 7);
+      return state.tasks.filter(function (t) {
+        if (!t.completedAt) return false;
+        var c = new Date(t.completedAt);
+        return c >= wStart && c < wEnd;
+      }).length;
+    });
+    var max = Math.max.apply(null, counts.concat([1]));
+    var anyData = counts.some(function (c) { return c > 0; });
+    document.getElementById("weeklyEmptyNote").hidden = anyData;
+    weeks.forEach(function (wStart, idx) {
+      var col = el("div", "weekly-bar-col");
+      var bar = el("div", "weekly-bar");
+      var h = Math.round((counts[idx] / max) * 100);
+      bar.style.height = Math.max(h, counts[idx] > 0 ? 6 : 2) + "%";
+      var label = el("div", "weekly-bar-label"); label.textContent = (wStart.getMonth() + 1) + "/" + wStart.getDate();
+      col.appendChild(bar); col.appendChild(label);
+      container.appendChild(col);
+    });
+  }
+
+  /* ---------------- render all ---------------- */
+  function renderAll() {
+    renderHero(); renderToday(); renderWeekly(); renderDomains(); renderProgress();
+  }
+
+  /* ---------------- mutations ---------------- */
+  function toggleTask(id) {
+    var t = state.tasks.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    if (t.recur) {
+      var todayS = todayISO();
+      var wasDone = isDone(t, todayS);
+      var pKey = periodKeyFor(t.recur, todayS);
+      t.doneLog = t.doneLog || [];
+      if (wasDone) {
+        t.lastDoneAt = null;
+        t.doneLog = t.doneLog.filter(function (k) { return k !== pKey; });
+      } else {
+        t.lastDoneAt = new Date().toISOString();
+        if (t.doneLog.indexOf(pKey) === -1) t.doneLog.push(pKey);
+      }
+    } else {
+      var next = !t.done;
+      t.done = next; t.completedAt = next ? new Date().toISOString() : null;
+    }
+    saveState(); renderAll();
+  }
+  function deleteTask(id) {
+    state.tasks = state.tasks.filter(function (t) { return t.id !== id; });
+    saveState(); renderAll();
+  }
+  function updateTask(id, patch) {
+    var t = state.tasks.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    Object.assign(t, patch);
+    saveState(); renderAll();
+  }
+  function addTask(domain, title, dueDate, dueTime, priority, recur) {
+    state.tasks.push({
+      id: "t-" + Date.now() + "-" + Math.round(Math.random() * 9999),
+      domain: domain, title: title, notes: "", priority: priority,
+      dueDate: recur ? null : (dueDate || null), dueTime: recur ? null : (dueTime || null),
+      recur: recur || null, lastDoneAt: null, doneLog: recur ? [] : [],
+      done: false, createdAt: new Date().toISOString(), completedAt: null
+    });
+    saveState(); renderAll();
+  }
+  function saveSettings(friendName, moveDate) {
+    state.settings.friendName = friendName || DEFAULT_SETTINGS.friendName;
+    state.settings.moveDate = moveDate || DEFAULT_SETTINGS.moveDate;
+    saveState(); renderHero();
+  }
+
+  /* ---------------- settings + export/import ---------------- */
+  function wireSettingsPanel() {
+    var toggle = document.getElementById("settingsToggle");
+    var panel = document.getElementById("settingsPanel");
+    var close = document.getElementById("settingsClose");
+    var save = document.getElementById("settingsSave");
+    var nameInput = document.getElementById("settingName");
+    var dateInput = document.getElementById("settingDate");
+
+    toggle.addEventListener("click", function () {
+      nameInput.value = state.settings.friendName;
+      dateInput.value = state.settings.moveDate;
+      panel.hidden = false;
+    });
+    close.addEventListener("click", function () { panel.hidden = true; });
+    save.addEventListener("click", function () { saveSettings(nameInput.value.trim(), dateInput.value); panel.hidden = true; });
+
+    var exportBox = document.getElementById("exportBox");
+    var exportText = document.getElementById("exportText");
+    var importBox = document.getElementById("importBox");
+    var importText = document.getElementById("importText");
+
+    document.getElementById("exportBtn").addEventListener("click", function () {
+      importBox.hidden = true;
+      exportText.value = JSON.stringify(state, null, 2);
+      exportBox.hidden = false;
+      exportText.focus();
+      exportText.select();
+    });
+
+    document.getElementById("importBtn").addEventListener("click", function () {
+      exportBox.hidden = true;
+      importText.value = "";
+      importBox.hidden = false;
+      importText.focus();
+    });
+    document.getElementById("importCancel").addEventListener("click", function () { importBox.hidden = true; });
+    document.getElementById("importLoad").addEventListener("click", function () {
+      try {
+        var parsed = JSON.parse(importText.value);
+        if (parsed && Array.isArray(parsed.tasks)) {
+          state = parsed;
+          state.settings = Object.assign({}, DEFAULT_SETTINGS, state.settings || {});
+          saveState(); renderAll();
+          importBox.hidden = true; panel.hidden = true;
+        }
+      } catch (e) {}
+    });
+  }
+
+  function wireWeekNav() {
+    document.getElementById("weekPrev").addEventListener("click", function () { weekOffset += 1; renderWeekly(); });
+    document.getElementById("weekNext").addEventListener("click", function () { weekOffset -= 1; renderWeekly(); });
+  }
+
+  function maybeShowHomeScreenTip() {
+    var dismissed = false;
+    try { dismissed = localStorage.getItem("eyalOS.tipDismissed") === "1"; } catch (e) {}
+    if (dismissed) return;
+    var b = document.createElement("div");
+    b.className = "tip-banner";
+    b.setAttribute("dir", "rtl");
+    var span = document.createElement("span");
+    span.textContent = "לשמירה הכי אמינה בטלפון: בתפריט השיתוף/שלוש הנקודות של הדפדפן בחרו \"הוסף למסך הבית\". כך המידע לא נמחק גם אם לא נכנסים לאתר כמה ימים.";
+    var closeBtn = document.createElement("button");
+    closeBtn.textContent = "✕";
+    closeBtn.setAttribute("aria-label", "סגור");
+    closeBtn.addEventListener("click", function () {
+      b.remove();
+      try { localStorage.setItem("eyalOS.tipDismissed", "1"); } catch (e) {}
+    });
+    b.appendChild(span); b.appendChild(closeBtn);
+    document.body.appendChild(b);
+  }
+
+  function init() {
+    state = loadState();
+    saveLocalOnly();
+    renderAll();
+    wireSettingsPanel();
+    wireWeekNav();
+    if (!STORAGE_OK) showStorageWarning();
+    initCloudSync();
+    maybeShowHomeScreenTip();
+  }
+
+  if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", init); } else { init(); }
+})();
+</script>
+</body>
+</html>
