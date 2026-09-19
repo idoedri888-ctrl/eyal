@@ -1,0 +1,3147 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;600;700&family=Heebo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Amatic+SC:wght@700&display=swap">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0B1712">
+<title>מערכת ההפעלה של אייל</title>
+<style>
+  :root {
+    --bg: #F2F6F1;
+    --surface: #FFFFFF;
+    --surface-2: #E9F1E9;
+    --surface-3: #DFEBE0;
+    --border: #D6E2D5;
+    --ink: #13231A;
+    --ink-soft: #4C6255;
+    --ink-faint: #86998C;
+    --accent: #D9A22C;
+    --accent-ink: #241705;
+    --jungle: #0E6B4F;
+    --sunset: #C1592B;
+    --violet: #6E4FA3;
+    --sea: #0E7A94;
+    --routine: #4C5C78;
+    --rose: #B8456F;
+    --good: #2F9E64;
+    --warn: #C2402C;
+    --shadow: 0 1px 2px rgba(19,35,26,.06), 0 10px 28px -14px rgba(19,35,26,.22);
+    --radius-lg: 20px;
+    --radius-md: 13px;
+    --radius-sm: 9px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0B1712; --surface: #12201A; --surface-2: #172A21; --surface-3: #1D3327;
+      --border: #24392C; --ink: #EAF3EC; --ink-soft: #9DB6A6; --ink-faint: #66806F;
+      --accent: #E8B94A; --accent-ink: #201400;
+      --jungle: #33B481; --sunset: #E38A55; --violet: #AB8CE3; --sea: #35B0CC; --routine: #93A8D6; --rose: #E77AA2;
+      --good: #48C387; --warn: #E9695A;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 14px 32px -14px rgba(0,0,0,.55);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B1712; --surface: #12201A; --surface-2: #172A21; --surface-3: #1D3327;
+    --border: #24392C; --ink: #EAF3EC; --ink-soft: #9DB6A6; --ink-faint: #66806F;
+    --accent: #E8B94A; --accent-ink: #201400;
+    --jungle: #33B481; --sunset: #E38A55; --violet: #AB8CE3; --sea: #35B0CC; --routine: #93A8D6; --rose: #E77AA2;
+    --good: #48C387; --warn: #E9695A;
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 14px 32px -14px rgba(0,0,0,.55);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); }
+  .app {
+    direction: rtl;
+    font-family: 'Heebo', 'Segoe UI', Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    min-height: 100%;
+    padding: max(26px, env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  bdi { unicode-bidi: isolate; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .95em; }
+  h1, h2, h3 { font-family: 'Frank Ruhl Libre', Georgia, serif; text-wrap: balance; margin: 0; }
+  button, input, select { font-family: inherit; }
+
+  /* ---------- Masthead ---------- */
+  .masthead-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .masthead-id { display: flex; flex-direction: column; gap: 2px; }
+  .eyebrow { margin: 0; font-size: .78rem; letter-spacing: .08em; color: var(--jungle); font-weight: 600; }
+  .masthead h1 { font-size: clamp(1.7rem, 4.4vw, 2.3rem); font-weight: 700; color: var(--ink); }
+  .sync-indicator { font-size: .72rem; color: var(--ink-faint); display: inline-flex; align-items: center; gap: 4px; min-height: 1.2em; }
+  .sync-indicator.sync-synced { color: var(--good); }
+  .sync-indicator.sync-error { color: var(--warn); }
+  .sync-indicator.sync-syncing { color: var(--ink-faint); }
+
+  .tip-banner {
+    position: fixed; inset-inline: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 45; margin-inline: auto; max-width: 460px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border); box-shadow: var(--shadow);
+    border-radius: 14px; padding: 12px 14px; font-size: .82rem; line-height: 1.4; display: flex; gap: 10px; align-items: flex-start;
+  }
+  .tip-banner button { flex: none; background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: .9rem; padding: 2px; }
+  .tip-banner button:hover { color: var(--ink); }
+
+  .icon-btn {
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-soft);
+    width: 42px; height: 42px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    box-shadow: var(--shadow); flex: none;
+  }
+  .icon-btn:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .icon-btn:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .icon-btn svg { width: 19px; height: 19px; }
+
+  /* ---------- Hero ---------- */
+  .hero-card {
+    position: relative;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 32px clamp(20px, 5vw, 44px) 0;
+    overflow: hidden;
+    background: var(--jungle);
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+  }
+  .hero-sun {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 45%, var(--accent) 0%, color-mix(in srgb, var(--accent) 70%, var(--sunset)) 60%, transparent 72%);
+    width: 300px; height: 300px;
+    top: 18%; right: 8%;
+    opacity: .95;
+    filter: blur(.5px);
+  }
+  @media (prefers-reduced-motion: no-preference) { .hero-sun { animation: sunfloat 9s ease-in-out infinite; } }
+  @keyframes sunfloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .hero-waves { position: absolute; inset-inline: 0; bottom: 0; width: 100%; height: 46%; display: block; }
+  .hero-inner {
+    position: relative; z-index: 2; width: 100%;
+    display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    padding-bottom: 30px;
+  }
+  .hero-count { display: flex; align-items: baseline; gap: 10px; }
+  .hero-number {
+    font-family: 'JetBrains Mono', monospace; font-weight: 600;
+    font-size: clamp(3.2rem, 9.5vw, 4.9rem); line-height: 1; color: #fff;
+    text-shadow: 0 2px 18px rgba(0,0,0,.18);
+  }
+  .hero-unit { font-size: 1.05rem; color: rgba(255,255,255,.92); font-weight: 600; }
+  .hero-meta { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; text-align: end; }
+  .hero-meta p { margin: 0; font-size: .86rem; color: rgba(255,255,255,.82); }
+  .hero-meta strong { color: #fff; font-weight: 700; }
+
+  section > h2 { font-size: 1.32rem; font-weight: 700; }
+  .section-sub { margin: 4px 0 14px; color: var(--ink-soft); font-size: .88rem; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  /* ---------- priority + due pills ---------- */
+  .priority-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; }
+  .priority-dot.p1 { background: var(--warn); }
+  .priority-dot.p2 { background: var(--ink-faint); }
+  .priority-dot.p3 { background: transparent; border: 1.5px solid var(--ink-faint); }
+
+  .due-pill {
+    font-size: .68rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    white-space: nowrap; font-family: 'JetBrains Mono', monospace;
+  }
+  .due-pill.overdue { background: var(--warn); color: #fff; }
+  .due-pill.today { background: var(--accent); color: var(--accent-ink); }
+  .due-pill.soon { background: var(--surface-3); color: var(--ink-soft); }
+  .due-pill.later { background: var(--surface-2); color: var(--ink-faint); }
+  .recur-pill {
+    font-size: .68rem; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    white-space: nowrap; background: var(--surface-2); color: var(--routine); border: 1px solid var(--border);
+  }
+  .streak-pill {
+    font-size: .68rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    white-space: nowrap; background: color-mix(in srgb, var(--sunset) 16%, transparent); color: var(--sunset);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ---------- Today list ---------- */
+  .today-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .today-empty { color: var(--ink-faint); font-size: .92rem; padding: 18px 0; }
+  .today-item {
+    display: flex; align-items: flex-start; gap: 11px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 12px 14px; box-shadow: var(--shadow); flex-wrap: wrap;
+  }
+  .chip {
+    flex: none; font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+    color: #fff; letter-spacing: .01em; white-space: nowrap;
+  }
+  .today-item-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+  .today-item-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .today-item-title { font-size: .95rem; font-weight: 500; }
+  .today-item-notes { font-size: .82rem; color: var(--ink-soft); }
+
+  /* ---------- Checkbox ---------- */
+  .check {
+    flex: none; width: 21px; height: 21px; border-radius: 7px; border: 1.6px solid var(--ink-faint);
+    background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    margin-top: 1px; padding: 0;
+  }
+  .check svg { width: 12px; height: 12px; opacity: 0; transition: opacity .12s; stroke: #fff; }
+  .check.done { background: var(--good); border-color: var(--good); }
+  .check.done svg { opacity: 1; }
+
+  /* ---------- Weekly journal ---------- */
+  .week-nav { display: flex; align-items: center; gap: 10px; }
+  .week-nav-btn {
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-soft);
+    width: 34px; height: 34px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; box-shadow: var(--shadow);
+  }
+  .week-nav-btn:hover { color: var(--ink); }
+  .week-label { font-size: .84rem; color: var(--ink-soft); font-weight: 600; min-width: 108px; text-align: center; }
+
+  .weekly-grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 10px; }
+  @media (max-width: 860px) { .weekly-grid { grid-template-columns: 1fr; } }
+
+  .day-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow);
+    min-height: 86px;
+  }
+  .day-card.is-today { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent), var(--shadow); }
+  .day-head { display: flex; align-items: baseline; justify-content: space-between; }
+  .day-name { font-size: .78rem; font-weight: 700; color: var(--ink-soft); }
+  .day-card.is-today .day-name { color: var(--accent); }
+  .day-date { font-size: .72rem; color: var(--ink-faint); font-family: 'JetBrains Mono', monospace; }
+  .day-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .day-task { display: flex; align-items: flex-start; gap: 7px; }
+  .day-task-time { font-family: 'JetBrains Mono', monospace; font-size: .7rem; color: var(--ink-faint); flex: none; padding-top: 1px; min-width: 34px; }
+  .day-task-title { font-size: .8rem; line-height: 1.3; flex: 1; }
+  .day-task-title.done { text-decoration: line-through; color: var(--ink-faint); }
+  .day-task-x { flex: none; background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: .68rem; padding: 2px; }
+  .day-task-x:hover { color: var(--warn); }
+  .day-empty { font-size: .74rem; color: var(--ink-faint); padding: 4px 0; }
+  .day-add-btn {
+    background: none; border: 1px dashed var(--border); color: var(--ink-faint);
+    font-size: .72rem; padding: 5px; border-radius: 7px; cursor: pointer; margin-top: auto;
+  }
+  .day-add-btn:hover { color: var(--jungle); border-color: var(--jungle); }
+
+  /* ---------- Domain grid ---------- */
+  .domains-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .domain-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow); padding: 18px; display: flex; flex-direction: column; gap: 12px;
+    border-top: 3px solid var(--d-color);
+  }
+  .domain-head { display: flex; align-items: center; gap: 10px; }
+  .domain-icon {
+    width: 36px; height: 36px; border-radius: 11px; display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--d-color) 16%, transparent); color: var(--d-color); flex: none;
+  }
+  .domain-icon svg { width: 19px; height: 19px; }
+  .domain-name { font-weight: 700; font-size: 1.02rem; flex: 1; }
+  .domain-pct { font-family: 'JetBrains Mono', monospace; font-size: .82rem; color: var(--d-color); font-weight: 700; }
+  .progress-track { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--d-color); border-radius: 999px; transition: width .35s ease; }
+
+  .task-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+  .task-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; padding: 7px 4px; border-radius: var(--radius-sm); }
+  .task-row:hover { background: var(--surface-2); }
+  .task-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .task-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .task-title { font-size: .89rem; line-height: 1.35; }
+  .task-title.done { color: var(--ink-faint); text-decoration: line-through; }
+  .task-notes { font-size: .78rem; color: var(--ink-soft); line-height: 1.3; }
+  .task-actions { display: flex; gap: 4px; flex: none; }
+  .task-mini-btn {
+    background: none; border: none; cursor: pointer; color: var(--ink-faint);
+    font-size: .68rem; padding: 4px 6px; border-radius: 6px; white-space: nowrap;
+  }
+  .task-mini-btn:hover { color: var(--jungle); background: color-mix(in srgb, var(--jungle) 10%, transparent); }
+  .task-mini-btn.del:hover { color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); }
+  .task-mini-btn.del.confirm { color: var(--warn); font-weight: 700; }
+
+  .domain-toggle { background: none; border: none; color: var(--ink-faint); font-size: .78rem; cursor: pointer; text-align: start; padding: 2px 0; }
+  .domain-toggle:hover { color: var(--ink-soft); }
+  .completed-list { display: none; flex-direction: column; gap: 3px; margin-top: 2px; }
+  .completed-list.open { display: flex; }
+
+  .inline-form {
+    display: none; flex-direction: column; gap: 6px; background: var(--surface-2);
+    border-radius: var(--radius-sm); padding: 10px; margin-top: 2px;
+  }
+  .inline-form.open { display: flex; }
+  .inline-form input, .inline-form select {
+    font-size: .85rem; padding: 7px 9px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--ink); width: 100%;
+  }
+  .inline-row { display: flex; gap: 6px; }
+  .inline-row > * { flex: 1; }
+  .inline-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  .btn {
+    font-size: .82rem; font-weight: 700; padding: 7px 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer;
+  }
+  .btn:hover { border-color: var(--ink-faint); }
+  .btn-primary { background: var(--jungle); border-color: var(--jungle); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost { background: none; border: none; color: var(--ink-soft); }
+  .btn-sm { padding: 5px 11px; font-size: .76rem; }
+
+  .add-trigger {
+    display: flex; align-items: center; gap: 6px; background: none; border: 1px dashed var(--border);
+    color: var(--ink-soft); font-size: .82rem; padding: 7px 10px; border-radius: var(--radius-sm);
+    cursor: pointer; margin-top: 2px;
+  }
+  .add-trigger:hover { color: var(--d-color, var(--jungle)); border-color: var(--d-color, var(--jungle)); }
+
+  /* ---------- Progress over time ---------- */
+  .progress-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .mini-progress { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; box-shadow: var(--shadow); }
+  .mini-progress-head { display: flex; justify-content: space-between; font-size: .82rem; margin-bottom: 8px; }
+  .mini-progress-head span:first-child { color: var(--ink-soft); }
+  .mini-progress-head span:last-child { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+
+  .weekly-chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 18px 20px 14px; }
+  .weekly-chart-title { font-size: .85rem; color: var(--ink-soft); margin-bottom: 12px; }
+  .weekly-bars { display: flex; align-items: flex-end; gap: 10px; height: 90px; }
+  .weekly-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .weekly-bar { width: 100%; max-width: 30px; background: var(--accent); border-radius: 5px 5px 2px 2px; min-height: 3px; }
+  .weekly-bar-label { font-size: .66rem; color: var(--ink-faint); font-family: 'JetBrains Mono', monospace; }
+  .weekly-empty-note { font-size: .8rem; color: var(--ink-faint); margin-top: 10px; }
+
+  /* ---------- Settings panel ---------- */
+  .settings-panel {
+    position: fixed; inset-inline-end: 16px; top: 16px; width: min(320px, calc(100vw - 32px));
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+    box-shadow: var(--shadow); padding: 16px; z-index: 20; display: flex; flex-direction: column; gap: 10px;
+    max-height: calc(100vh - 32px); overflow-y: auto;
+  }
+  .settings-panel h3 { font-size: .95rem; }
+  .settings-panel label { font-size: .78rem; color: var(--ink-soft); display: flex; flex-direction: column; gap: 4px; }
+  .settings-panel input { font-size: .88rem; padding: 7px 9px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); }
+  .settings-actions { display: flex; justify-content: space-between; margin-top: 4px; }
+  .settings-divider { height: 1px; background: var(--border); margin: 4px 0; }
+  .settings-row { display: flex; gap: 8px; }
+  .settings-row .btn { flex: 1; }
+  .local-note { font-size: .74rem; color: var(--ink-faint); line-height: 1.4; }
+  .backup-box { display: flex; flex-direction: column; gap: 6px; }
+  .backup-textarea {
+    width: 100%; font-family: 'JetBrains Mono', monospace; font-size: .68rem; direction: ltr; text-align: left;
+    border: 1px solid var(--border); border-radius: 7px; background: var(--surface-2); color: var(--ink);
+    padding: 8px; resize: vertical;
+  }
+
+  /* ---------- Views + bottom tab bar ---------- */
+  .view { display: flex; flex-direction: column; gap: 30px; }
+  .tabbar {
+    position: fixed; inset-inline: 0; bottom: 0; z-index: 40; display: flex; justify-content: center;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--bg) 80%, transparent);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border);
+  }
+  .tabbar-inner {
+    display: flex; gap: 4px; width: 100%; max-width: 360px; padding: 4px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 999px; box-shadow: var(--shadow);
+  }
+  .tab {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 10px 10px; border: none; border-radius: 999px; background: none; cursor: pointer;
+    font-size: .88rem; font-weight: 700; color: var(--ink-soft); transition: background .18s, color .18s;
+  }
+  .tab svg { width: 18px; height: 18px; }
+  .tab[aria-current="page"] { background: var(--jungle); color: #fff; }
+  .tab[data-view="wall"][aria-current="page"] { background: linear-gradient(135deg, var(--rose), var(--sunset)); }
+
+  /* ---------- Thoughts wall ---------- */
+  .wall-head h2 { font-size: 1.75rem; }
+  .wall-head p { margin: 6px 0 0; color: var(--ink-soft); font-size: .9rem; line-height: 1.5; max-width: 46ch; }
+  .wall-stat { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .wall-stat:empty { display: none; }
+  .wall-stat span { font-size: .72rem; font-weight: 700; color: var(--ink-soft); padding: 4px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+  .wall-stat .lock-chip { display: inline-flex; align-items: center; gap: 4px; }
+  .wall-stat svg { width: 11px; height: 11px; }
+
+  .composer { display: flex; gap: 8px; align-items: stretch; }
+  .composer-card {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; text-align: start;
+    background: var(--surface); color: var(--ink-soft); font-size: 1rem; line-height: 1.35; cursor: pointer;
+    border: 1.5px dashed color-mix(in srgb, var(--rose) 55%, var(--border)); border-radius: var(--radius-lg);
+    padding: 14px 16px; box-shadow: var(--shadow);
+  }
+  .composer-card:hover { border-color: var(--rose); color: var(--ink); }
+  .composer-card .plus {
+    flex: none; width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--rose), var(--sunset)); color: #fff; font-size: 1.5rem; line-height: 1;
+  }
+  .prompt-shuffle {
+    flex: none; width: 52px; border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--surface);
+    color: var(--ink-soft); cursor: pointer; display: grid; place-items: center; box-shadow: var(--shadow);
+  }
+  .prompt-shuffle svg { width: 20px; height: 20px; transition: transform .35s ease; }
+  .prompt-shuffle:active svg { transform: rotate(180deg); }
+  .prompt-shuffle:hover { color: var(--rose); border-color: var(--rose); }
+
+  .quick-kinds { display: flex; gap: 8px; }
+  .qk {
+    flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 6px;
+    border-radius: 14px; border: 1px solid color-mix(in srgb, var(--k) 42%, var(--border));
+    background: color-mix(in srgb, var(--k) 10%, var(--surface)); color: var(--ink); font-size: .82rem; font-weight: 700; cursor: pointer;
+  }
+  .qk svg { flex: none; width: 17px; height: 17px; color: var(--k); }
+  .qk:hover { background: color-mix(in srgb, var(--k) 18%, var(--surface)); }
+
+  .wall-tools { display: flex; flex-direction: column; gap: 10px; }
+  .chips-row { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
+  .chips-row::-webkit-scrollbar { display: none; }
+  .fchip {
+    flex: none; border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft);
+    border-radius: 999px; padding: 7px 14px; font-size: .82rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .fchip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .fchip .n { font-family: 'JetBrains Mono', monospace; font-size: .68rem; opacity: .7; margin-inline-start: 6px; }
+  .wall-search input {
+    width: 100%; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--ink); font-size: 1rem;
+  }
+  .mood-week { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .74rem; color: var(--ink-faint); }
+  .mood-week:empty { display: none; }
+  .mood-week .mw-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--ink-soft); font-weight: 600; }
+  .mood-week .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--mc, var(--rose)); }
+
+  /* the board: a corkboard-like dotted surface the notes are pinned to */
+  .wall-board {
+    border-radius: 24px; padding: 18px 12px 6px; border: 1px solid var(--border);
+    background-color: color-mix(in srgb, var(--surface-2) 60%, var(--bg));
+    background-image: radial-gradient(color-mix(in srgb, var(--ink) 16%, transparent) 1.1px, transparent 1.4px);
+    background-size: 20px 20px;
+  }
+  .wall-grid { column-count: 2; column-gap: 12px; }
+  @media (min-width: 720px) { .wall-board { padding: 22px 18px 8px; } .wall-grid { column-count: 3; column-gap: 16px; } }
+  @media (min-width: 980px) { .wall-grid { column-count: 4; } }
+  .note {
+    position: relative; display: block; width: 100%; margin: 0 0 16px; break-inside: avoid; text-align: start; cursor: pointer;
+    background: color-mix(in srgb, var(--n-color) 14%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--n-color) 30%, var(--border));
+    border-radius: 6px 6px 16px 6px; padding: 13px 13px 11px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.05), 0 10px 22px -12px color-mix(in srgb, var(--n-color) 55%, rgba(0,0,0,.4));
+    transform: rotate(var(--tilt, 0deg)); transition: transform .18s ease, box-shadow .18s ease;
+    color: var(--ink);
+  }
+  .note::after { /* curled bottom corner */
+    content: ""; position: absolute; bottom: 0; inset-inline-end: 0; width: 18px; height: 18px; border-radius: 0 0 16px 0;
+    background: linear-gradient(315deg, color-mix(in srgb, var(--n-color) 34%, var(--surface)) 50%, transparent 50%);
+    pointer-events: none;
+  }
+  .note.is-pinned::before { /* washi tape on pinned notes */
+    content: ""; position: absolute; top: -9px; left: 50%; width: 58px; height: 17px; margin-left: -29px; transform: rotate(-3deg);
+    background: color-mix(in srgb, var(--n-color) 42%, transparent); border: 1px solid color-mix(in srgb, var(--n-color) 35%, transparent);
+    border-radius: 3px; box-shadow: 0 1px 2px rgba(0,0,0,.08); pointer-events: none;
+  }
+  .note:hover, .note:focus-visible { transform: rotate(0deg) translateY(-3px); }
+  .note-top { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; flex-wrap: wrap; padding-inline-end: 30px; }
+  .note-ico { flex: none; width: 24px; height: 24px; border-radius: 999px; display: grid; place-items: center; background: color-mix(in srgb, var(--n-color) 20%, var(--surface)); color: var(--n-color); }
+  .note-ico svg { width: 14px; height: 14px; }
+  .note-kind { font-size: .68rem; font-weight: 800; letter-spacing: .03em; color: var(--n-color); }
+  .note-mood { font-size: .66rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--n-color) 20%, transparent); color: var(--ink); }
+  .note-title { font-family: 'Amatic SC', 'Frank Ruhl Libre', Georgia, serif; font-weight: 700; font-size: 1.5rem; line-height: 1.12; margin: 0 0 5px; word-break: break-word; }
+  .note-body {
+    margin: 0; font-size: .86rem; line-height: 1.55; white-space: pre-wrap; word-break: break-word;
+    display: -webkit-box; -webkit-line-clamp: 9; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .note-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; font-size: .68rem; color: var(--ink-faint); }
+  .note-foot .lock { display: inline-flex; align-items: center; gap: 4px; }
+  .note-foot svg { width: 12px; height: 12px; }
+  .note-pin {
+    position: absolute; top: 6px; inset-inline-end: 6px; width: 30px; height: 30px; border: none; background: none;
+    border-radius: 999px; cursor: pointer; display: grid; place-items: center; color: var(--ink-faint); opacity: .55;
+  }
+  .note-pin svg { width: 15px; height: 15px; }
+  .note-pin:hover, .note-pin.on { opacity: 1; color: var(--n-color); }
+  .note-pin.on svg { fill: currentColor; }
+  .wall-grid.enter .note { animation: noteIn .45s cubic-bezier(.2, .8, .2, 1) backwards; animation-delay: calc(min(var(--i, 0), 9) * 45ms); }
+  .note.fresh { animation: notePop .55s cubic-bezier(.2, .9, .3, 1.2) backwards; }
+  @keyframes noteIn { from { opacity: 0; transform: translateY(16px) rotate(calc(var(--tilt, 0deg) * 3)); } to { opacity: 1; transform: translateY(0) rotate(var(--tilt, 0deg)); } }
+  @keyframes notePop { from { opacity: 0; transform: scale(.85) rotate(calc(var(--tilt, 0deg) * 4)); } to { opacity: 1; transform: scale(1) rotate(var(--tilt, 0deg)); } }
+
+  .wall-empty {
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 14px 4px 18px;
+    color: var(--ink-soft);
+  }
+  .wall-empty svg { width: 150px; height: 100px; }
+  .wall-empty h3 { font-size: 1.3rem; color: var(--ink); }
+  .wall-empty p { margin: 0; font-size: .9rem; max-width: 34ch; line-height: 1.55; }
+  .prompt-list { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 380px; margin-top: 4px; }
+  .prompt-btn {
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 14px;
+    padding: 12px 14px; font-size: .92rem; text-align: start; cursor: pointer; box-shadow: var(--shadow);
+  }
+  .prompt-btn:hover { border-color: var(--rose); }
+  .wall-none { color: var(--ink-faint); font-size: .92rem; text-align: center; padding: 28px 0; }
+
+  .fab {
+    position: fixed; z-index: 38; inset-inline-end: 18px; bottom: calc(84px + env(safe-area-inset-bottom));
+    width: 54px; height: 54px; border-radius: 999px; border: none; cursor: pointer; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--rose), var(--sunset)); color: #fff; font-size: 1.9rem; line-height: 1;
+    box-shadow: 0 10px 26px -8px color-mix(in srgb, var(--rose) 70%, transparent), 0 2px 6px rgba(0, 0, 0, .18);
+  }
+  .fab { opacity: 0; pointer-events: none; transform: translateY(14px) scale(.85); transition: opacity .2s ease, transform .2s ease; }
+  .fab.on { opacity: 1; pointer-events: auto; transform: none; }
+  .fab.on:active { transform: scale(.94); }
+
+  /* ---------- Note sheet (create / edit) ---------- */
+  .sheet-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(4, 12, 8, .5); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+  .sheet {
+    position: fixed; z-index: 61; inset-inline: 0; bottom: 0; margin-inline: auto; width: min(560px, 100%);
+    max-height: 92vh; max-height: 92dvh; overflow-y: auto;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-bottom: none;
+    border-radius: 24px 24px 0 0; box-shadow: 0 -20px 60px rgba(0, 0, 0, .35);
+    padding: 12px 18px calc(18px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px;
+    direction: rtl; font-family: 'Heebo', 'Segoe UI', Arial, sans-serif;
+  }
+  @media (max-width: 719px) { .sheet { animation: sheetup .24s ease both; } }
+  @media (min-width: 720px) { .sheet { bottom: auto; top: 50%; transform: translateY(-50%); border-radius: 24px; border-bottom: 1px solid var(--border); } }
+  @keyframes sheetup { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .sheet-grab { width: 44px; height: 5px; border-radius: 999px; background: var(--border); margin: 0 auto; flex: none; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .sheet-head h3 { font-size: 1.25rem; }
+  .sheet-head .btn-top { padding: 8px 18px; font-size: .88rem; background: linear-gradient(135deg, var(--rose), var(--sunset)); border-color: transparent; color: #fff; }
+  .sheet-head-actions { display: flex; align-items: center; gap: 8px; }
+  .sheet .x-btn { width: 36px; height: 36px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink-soft); cursor: pointer; font-size: .95rem; }
+  .note-textarea {
+    width: 100%; min-height: 130px; resize: vertical; border: 1px solid color-mix(in srgb, var(--s-color, var(--rose)) 35%, var(--border));
+    border-radius: 16px; padding: 16px 14px 14px; font-size: 1.05rem; line-height: 1.6; color: var(--ink);
+    background: color-mix(in srgb, var(--s-color, var(--rose)) 9%, var(--surface-2));
+    box-shadow: inset 0 4px 0 var(--s-color, var(--rose));
+  }
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .field-label { font-size: .76rem; font-weight: 700; color: var(--ink-soft); letter-spacing: .03em; }
+  .seg { display: flex; gap: 6px; }
+  .seg button {
+    flex: 1; padding: 9px 6px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2);
+    color: var(--ink-soft); font-size: .86rem; font-weight: 700; cursor: pointer;
+  }
+  .seg button[aria-checked="true"] { background: var(--s-color, var(--rose)); border-color: var(--s-color, var(--rose)); color: #fff; }
+  .mood-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mood-chips button {
+    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2);
+    color: var(--ink-soft); font-size: .8rem; font-weight: 600; cursor: pointer;
+  }
+  .mood-chips button[aria-pressed="true"] { border-color: var(--s-color, var(--rose)); color: var(--ink); background: color-mix(in srgb, var(--s-color, var(--rose)) 22%, var(--surface-2)); }
+  .swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+  .swatch {
+    width: 32px; height: 32px; border-radius: 999px; border: 2px solid transparent; cursor: pointer; padding: 0;
+    background: var(--sw); box-shadow: inset 0 0 0 2px var(--surface);
+  }
+  .swatch[aria-checked="true"] { border-color: var(--ink); }
+  .switch-row {
+    display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 14px; background: var(--surface-2);
+    border: 1px solid var(--border); cursor: pointer;
+  }
+  .switch-row input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--jungle); flex: none; }
+  .switch-row b { display: block; font-size: .9rem; }
+  .switch-row span { display: block; font-size: .76rem; color: var(--ink-soft); line-height: 1.45; margin-top: 2px; }
+  .sheet-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .sheet-actions .spacer { flex: 1; }
+  .sheet-actions .btn-save { padding: 10px 22px; font-size: .95rem; background: linear-gradient(135deg, var(--rose), var(--sunset)); border-color: transparent; color: #fff; }
+  .btn-danger { color: var(--warn); }
+  .btn-danger.confirm { font-weight: 800; background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .to-task { display: none; gap: 8px; align-items: center; }
+  .to-task.open { display: flex; }
+  .to-task select { flex: 1; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); font-size: 1rem; }
+
+  .toast {
+    position: fixed; z-index: 70; inset-inline: 0; margin-inline: auto; width: max-content; max-width: 90vw;
+    bottom: calc(84px + env(safe-area-inset-bottom)); background: var(--ink); color: var(--bg);
+    padding: 10px 18px; border-radius: 999px; font-size: .86rem; font-weight: 600; box-shadow: var(--shadow);
+  }
+
+  /* iOS zooms into any focused field under 16px — keep every field at 16px on touch screens */
+  @media (pointer: coarse) { input, textarea, select { font-size: 16px !important; } }
+
+  .prompt-strip { display: flex; align-items: stretch; gap: 8px; }
+  .prompt-strip[hidden] { display: none; }
+  .ps-q {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: start; cursor: pointer;
+    padding: 9px 12px; border-radius: 14px; border: 1px dashed color-mix(in srgb, var(--s-color, var(--rose)) 55%, var(--border));
+    background: color-mix(in srgb, var(--s-color, var(--rose)) 8%, var(--surface-2)); color: var(--ink); font-size: .92rem; line-height: 1.35;
+  }
+  .ps-label { font-size: .68rem; font-weight: 700; letter-spacing: .03em; color: var(--ink-soft); }
+  .ps-next { flex: none; width: 46px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink-soft); cursor: pointer; display: grid; place-items: center; }
+  .ps-next svg { width: 19px; height: 19px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .note, .prompt-shuffle svg { transition: none; }
+    .wall-grid.enter .note, .note.fresh { animation: none; }
+    .sheet { animation: none !important; }
+  }
+
+  /* ---------- Task details (expandable text + checklist) ---------- */
+  .detail-toggle {
+    display: inline-flex; align-items: center; gap: 5px; background: none; border: 1px solid var(--border);
+    color: var(--ink-soft); font-size: .68rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; cursor: pointer;
+    white-space: nowrap;
+  }
+  .detail-toggle:hover, .detail-toggle[aria-expanded="true"] { color: var(--d-color, var(--jungle)); border-color: var(--d-color, var(--jungle)); }
+  .detail-toggle .cnt { font-family: 'JetBrains Mono', monospace; font-size: .66rem; }
+  .detail-toggle .chev { display: inline-block; transition: transform .18s; font-size: .6rem; }
+  .detail-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .detail-panel {
+    display: none; flex-direction: column; gap: 10px; margin-top: 8px; padding: 12px;
+    background: var(--surface-2); border-radius: var(--radius-sm); border: 1px solid var(--border);
+    border-inline-start: 3px solid var(--d-color, var(--jungle));
+  }
+  .detail-panel.open { display: flex; }
+  .dp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .dp-progress { flex: 1; display: flex; align-items: center; gap: 8px; font-size: .72rem; color: var(--ink-faint); }
+  .dp-progress .progress-track { flex: 1; height: 5px; background: var(--surface-3); }
+  .dp-progress .progress-fill { background: var(--d-color, var(--jungle)); }
+  .dp-text { margin: 0; font-size: .84rem; line-height: 1.6; color: var(--ink); white-space: pre-wrap; }
+  .dp-text.empty { color: var(--ink-faint); }
+  .dp-textarea, .dp-input {
+    width: 100%; font-size: .85rem; line-height: 1.5; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+  }
+  .dp-textarea { min-height: 96px; resize: vertical; }
+  .dp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .dp-item { display: flex; align-items: flex-start; gap: 9px; padding: 5px 2px; }
+  .dp-item .check { width: 18px; height: 18px; border-radius: 6px; margin-top: 2px; }
+  .dp-item .check svg { width: 10px; height: 10px; }
+  .dp-item-text { flex: 1; font-size: .84rem; line-height: 1.45; min-width: 0; }
+  .dp-item-text.done { color: var(--ink-faint); text-decoration: line-through; }
+  .dp-link { font-size: .7rem; color: var(--sea); text-decoration: none; white-space: nowrap; margin-inline-start: 6px; font-weight: 600; }
+  .dp-link:hover { text-decoration: underline; }
+  .dp-x { flex: none; background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: .74rem; padding: 4px 6px; border-radius: 6px; }
+  .dp-x:hover { color: var(--warn); }
+  .dp-add { display: flex; gap: 6px; }
+  .dp-add .btn { flex: none; }
+  .dp-empty { font-size: .8rem; color: var(--ink-faint); margin: 0; }
+  .dp-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .task-row > .detail-panel, .today-item > .detail-panel { flex: 1 0 100%; margin-top: 2px; }
+
+  .import-msg { font-size: .74rem; margin: 0; }
+  .import-msg.ok { color: var(--good); }
+  .import-msg.err { color: var(--warn); }
+
+  .footer { text-align: center; color: var(--ink-faint); font-size: .8rem; padding-top: 4px; }
+  [hidden] { display: none !important; }
+
+  @media (max-width: 480px) {
+    .hero-inner { flex-direction: column; align-items: flex-start; gap: 14px; }
+    .hero-meta { align-items: flex-start; text-align: start; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .domain-card, .hero-card, .day-card { animation: rise .5s ease both; }
+    .domain-card:nth-child(2) { animation-delay: .04s; }
+    .domain-card:nth-child(3) { animation-delay: .08s; }
+    .domain-card:nth-child(4) { animation-delay: .12s; }
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+
+<div class="app" dir="rtl" lang="he">
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-id">
+        <p class="eyebrow">מערכת ההפעלה של</p>
+        <h1 id="friendNameHeading">אייל</h1>
+        <span class="sync-indicator" id="syncIndicator"></span>
+      </div>
+      <button class="icon-btn" id="settingsToggle" aria-label="הגדרות" title="הגדרות">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.36.4.66.73.85.24.14.5.22.78.24H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="view" id="viewHome">
+  <section class="hero" aria-label="ספירה לאחור למעבר לג'מייקה">
+    <div class="hero-card">
+      <div class="hero-sun" aria-hidden="true"></div>
+      <svg class="hero-waves" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 40 C 60 15, 120 15, 180 40 S 300 65, 400 40 L400 90 L0 90 Z" fill="var(--sea)" opacity="0.55"></path>
+        <path d="M0 58 C 70 35, 130 35, 200 58 S 320 82, 400 58 L400 90 L0 90 Z" fill="var(--jungle)" opacity="0.85"></path>
+      </svg>
+      <div class="hero-inner">
+        <div class="hero-count">
+          <span class="hero-number mono" id="daysLeft">—</span>
+          <span class="hero-unit">ימים לג'מייקה</span>
+        </div>
+        <div class="hero-meta">
+          <p>יעד: <strong id="moveDateLabel" class="mono">—</strong></p>
+          <p>היום: <strong id="todayLabel" class="mono">—</strong></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="today-section" aria-label="מה הדבר הבא">
+    <div class="section-head"><h2>היום</h2></div>
+    <p class="section-sub">הכי דחוף וחשוב מכל תחום, ביחד</p>
+    <ul class="today-list" id="todayList"></ul>
+  </section>
+
+  <section class="weekly-section" aria-label="יומן שבועי">
+    <div class="section-head">
+      <h2>יומן השבוע</h2>
+      <div class="week-nav">
+        <button class="week-nav-btn" id="weekPrev" aria-label="שבוע קודם">›</button>
+        <span class="week-label" id="weekLabel"></span>
+        <button class="week-nav-btn" id="weekNext" aria-label="שבוע הבא">‹</button>
+      </div>
+    </div>
+    <p class="section-sub">משימות משובצות לפי יום ושעה</p>
+    <div class="weekly-grid" id="weeklyGrid"></div>
+  </section>
+
+  <section class="domains-grid" id="domainsGrid" aria-label="תחומים"></section>
+
+  <section class="progress-section" aria-label="התקדמות לאורך זמן">
+    <h2>התקדמות</h2>
+    <p class="section-sub">כמה כבר סגור בכל תחום, וקצב הביצוע שלך בשבועות האחרונים</p>
+    <div class="progress-overview" id="progressOverview"></div>
+    <div class="weekly-chart-card">
+      <p class="weekly-chart-title">משימות שהושלמו, לפי שבוע</p>
+      <div class="weekly-bars" id="weeklyBars"></div>
+      <p class="weekly-empty-note" id="weeklyEmptyNote" hidden>עוד אין נתונים — ברגע שתתחילו לסמן משימות, הקצב שלכם יופיע כאן.</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>נשמר על המכשיר תמיד, ומגובה אוטומטית לענן כשיש אינטרנט — בלי צורך בחשבון. נבנה בהדרגה — נוסיף עוד ככל שהחיים מתקדמים.</p>
+  </footer>
+  </div>
+
+  <div class="view" id="viewWall" hidden>
+    <div class="wall-head">
+      <h2>קיר המחשבות</h2>
+      <p>מקום לכל מה שעובר לך בראש: מחשבות, תחושות ודברים שחשוב לטפל בהם. פתק חדש נשמר רק במכשיר הזה, אלא אם תבחר אחרת.</p>
+      <div class="wall-stat" id="wallStat"></div>
+    </div>
+    <div class="composer">
+      <button class="composer-card" id="composerBtn" type="button">
+        <span class="plus" aria-hidden="true">+</span>
+        <span id="composerHint">מה עובר לך בראש?</span>
+      </button>
+      <button class="prompt-shuffle" id="promptShuffle" type="button" aria-label="שאלה אחרת" title="שאלה אחרת">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.6L4 8.5"></path><path d="M4 4v4.5h4.5"></path><path d="M4 13a8 8 0 0 0 14.3 4.6l1.7-2.1"></path><path d="M20 20v-4.5h-4.5"></path></svg>
+      </button>
+    </div>
+    <div class="quick-kinds" id="quickKinds" role="group" aria-label="פתק חדש לפי סוג"></div>
+    <div class="wall-tools" id="wallTools" hidden>
+      <div class="chips-row" id="wallChips" role="group" aria-label="סינון פתקים"></div>
+      <div class="mood-week" id="moodWeek"></div>
+      <div class="wall-search"><input type="search" id="wallSearch" placeholder="חיפוש בפתקים…" aria-label="חיפוש בפתקים" autocomplete="off"></div>
+    </div>
+    <div class="wall-board" id="wallBoard"><div class="wall-grid" id="wallGrid"></div></div>
+  </div>
+  <button class="fab" id="wallFab" type="button" aria-label="פתק חדש" hidden>+</button>
+
+  <nav class="tabbar" aria-label="ניווט ראשי">
+    <div class="tabbar-inner">
+      <button class="tab" type="button" data-view="home" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v9.5h13V10"></path></svg>
+        <span>הבית</span>
+      </button>
+      <button class="tab" type="button" data-view="wall" aria-current="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h9v9H4z"></path><path d="M13 9h7v10h-9v-5"></path></svg>
+        <span>קיר מחשבות</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
+  <div class="sheet" id="noteSheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+    <div class="sheet-grab" aria-hidden="true"></div>
+    <div class="sheet-head">
+      <div class="sheet-head-actions">
+        <button class="x-btn" id="sheetClose" type="button" aria-label="סגור">✕</button>
+        <h3 id="sheetTitle">פתק חדש</h3>
+      </div>
+      <button class="btn btn-top" id="noteSaveTop" type="button">שמור</button>
+    </div>
+    <div class="prompt-strip" id="promptStrip" hidden>
+      <button class="ps-q" id="promptUse" type="button"><span class="ps-label">שאלה לפתיחה — הקש כדי להוסיף לפתק</span><span id="promptText"></span></button>
+      <button class="ps-next" id="promptNext" type="button" aria-label="שאלה אחרת">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.6L4 8.5"></path><path d="M4 4v4.5h4.5"></path><path d="M4 13a8 8 0 0 0 14.3 4.6l1.7-2.1"></path><path d="M20 20v-4.5h-4.5"></path></svg>
+      </button>
+    </div>
+    <textarea class="note-textarea" id="noteText" dir="auto" rows="6" aria-label="תוכן הפתק"></textarea>
+    <div class="field">
+      <span class="field-label">סוג</span>
+      <div class="seg" id="kindSeg" role="radiogroup" aria-label="סוג הפתק"></div>
+    </div>
+    <div class="field" id="moodField" hidden>
+      <span class="field-label">איך אני מרגיש</span>
+      <div class="mood-chips" id="moodChips"></div>
+    </div>
+    <div class="field">
+      <span class="field-label">צבע</span>
+      <div class="swatches" id="swatches" role="radiogroup" aria-label="צבע הפתק"></div>
+    </div>
+    <label class="switch-row">
+      <input type="checkbox" id="notePrivate">
+      <div><b>נשאר רק במכשיר הזה</b><span id="privateHint"></span></div>
+    </label>
+    <div class="to-task" id="toTaskForm">
+      <select id="toTaskSelect" aria-label="תחום למשימה"></select>
+      <button class="btn btn-primary btn-sm" id="toTaskGo" type="button">הוסף משימה</button>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost btn-danger" id="noteDelete" type="button" hidden>מחק</button>
+      <button class="btn btn-ghost" id="noteToTask" type="button" hidden>הפוך למשימה</button>
+      <span class="spacer"></span>
+      <button class="btn btn-save" id="noteSave" type="button">שמור לקיר</button>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <div class="settings-panel" id="settingsPanel" hidden>
+    <h3>הגדרות</h3>
+    <label>שם
+      <input type="text" id="settingName" maxlength="30">
+    </label>
+    <label>תאריך המעבר
+      <input type="date" id="settingDate">
+    </label>
+    <div class="settings-actions">
+      <button class="btn btn-ghost" id="settingsClose">סגור</button>
+      <button class="btn btn-primary" id="settingsSave">שמור</button>
+    </div>
+    <div class="settings-divider"></div>
+    <p class="local-note">נשמר תמיד על המכשיר. אם נפתח מקישור אמיתי (לא קובץ מקומי) המידע גם מתגבה אוטומטית לענן, כך שאותו קישור מציג את אותם נתונים בכל מכשיר. ליתר ביטחון, אפשר גם לייצא גיבוי כאן ולהדביק אותו בייבוא במכשיר אחר.</p>
+    <div class="settings-row">
+      <button class="btn btn-sm" id="exportBtn">ייצוא גיבוי</button>
+      <button class="btn btn-sm" id="importBtn">ייבוא גיבוי</button>
+    </div>
+    <div class="settings-row">
+      <button class="btn btn-sm" id="copySyncBtn">העתק קישור סנכרון</button>
+      <button class="btn btn-sm" id="restoreBtn" hidden>שחזר גיבוי לפני השדרוג</button>
+    </div>
+    <p class="import-msg" id="settingsMsg" role="status" hidden></p>
+    <div class="backup-box" id="exportBox" hidden>
+      <p class="local-note">הטקסט מסומן מראש. אפשר ללחוץ "העתק" ולשמור אותו בהערות או בהודעה לעצמכם.</p>
+      <textarea class="backup-textarea" id="exportText" readonly rows="6"></textarea>
+      <button class="btn btn-sm btn-primary" id="exportCopy">העתק ללוח</button>
+    </div>
+    <div class="backup-box" id="importBox" hidden>
+      <p class="local-note">הדביקו כאן גיבוי שיוצא בעבר, ואז לחצו "טען".</p>
+      <textarea class="backup-textarea" id="importText" rows="6" placeholder="{...}"></textarea>
+      <div class="settings-row">
+        <button class="btn btn-ghost btn-sm" id="importCancel">ביטול</button>
+        <button class="btn btn-primary btn-sm" id="importLoad">טען</button>
+      </div>
+    </div>
+    <p class="local-note" style="margin:0">גרסה <bdi>2.2</bdi>. פתקים פרטיים נכללים בייצוא הגיבוי אך לא עולים לענן.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "eyalOS.v1";
+
+  var STORAGE_OK = (function () {
+    try {
+      var k = "__eyalOS_test__";
+      localStorage.setItem(k, "1");
+      localStorage.removeItem(k);
+      return true;
+    } catch (e) { return false; }
+  })();
+
+  /* ---------------- cloud sync (best-effort; app works fully offline without it) ----------------
+     Uses kvdb.io, a free anonymous key-value store with no login for us or the user. Bucket
+     creation returns the new bucket id as plain response TEXT (not a response header), because
+     headers on a cross-origin response are often invisible to browser fetch().
+     A sync id lives in the URL (?sync=ID) and is remembered in localStorage, so every device opening
+     the SAME link reads/writes the same record.
+
+     v2: sync is a per-item MERGE, not "newest whole-state wins". Every sync cycle is
+     GET remote -> merge with local (per task by updatedAt, deletions via tombstones) -> PUT only if the
+     result differs from what the cloud holds. Two devices editing different tasks no longer overwrite
+     each other. If the network or the service is unavailable, everything below fails silently and the
+     app keeps working purely on localStorage. */
+  var CLOUD_HOST = "https://kvdb.io/";
+  var CLOUD_KEY = "state";
+  var cloudId = null;
+  var cloudReady = false;
+  var cloudTimer = null;
+  var cloudBusy = false;
+  var cloudAgain = false;
+  var lastSyncAt = 0;
+
+  function cloudUrl() { return CLOUD_HOST + cloudId + "/" + CLOUD_KEY; }
+
+  function setSyncIndicator(mode) {
+    var node = document.getElementById("syncIndicator");
+    if (!node) return;
+    var labels = {
+      synced: "☁ מסונכרן",
+      local: "מקומי בלבד (בלי אינטרנט/ענן)",
+      syncing: "מסנכרן…",
+      error: "לא הצלחתי להתחבר לענן — ממשיך לשמור מקומית"
+    };
+    node.textContent = labels[mode] || "";
+    node.className = "sync-indicator sync-" + mode;
+  }
+
+  function initCloudSync() {
+    var urlId = null;
+    try { urlId = new URLSearchParams(location.search).get("sync"); } catch (e) {}
+    var savedId = null;
+    try { savedId = localStorage.getItem("eyalOS.syncId"); } catch (e) {}
+    cloudId = urlId || savedId;
+
+    if (cloudId) {
+      try { localStorage.setItem("eyalOS.syncId", cloudId); } catch (e) {}
+      if (!urlId) {
+        try { history.replaceState(null, "", location.pathname + "?sync=" + cloudId + location.hash); } catch (e) {}
+      }
+      cloudReady = true;
+      cloudSync();
+    } else if (location.protocol !== "file:") {
+      // only auto-provision a cloud record on a real hosted page; a local file:// copy stays offline-only
+      cloudCreateBucket();
+    } else {
+      setSyncIndicator("local");
+    }
+  }
+
+  function cloudCreateBucket() {
+    setSyncIndicator("syncing");
+    fetch(CLOUD_HOST, { method: "POST" })
+      .then(function (res) { if (!res.ok) throw new Error("bucket create failed"); return res.text(); })
+      .then(function (bucketId) {
+        bucketId = (bucketId || "").trim();
+        if (!bucketId) throw new Error("empty bucket id");
+        cloudId = bucketId;
+        try { localStorage.setItem("eyalOS.syncId", bucketId); } catch (e) {}
+        try { history.replaceState(null, "", location.pathname + "?sync=" + bucketId + location.hash); } catch (e) {}
+        cloudReady = true;
+        return fetch(cloudUrl(), { method: "PUT", body: JSON.stringify(publicView(state)) });
+      })
+      .then(function (res) { setSyncIndicator(res && res.ok ? "synced" : "error"); })
+      .catch(function () {
+        cloudReady = false;
+        setSyncIndicator("local");
+      });
+  }
+
+  function scheduleCloudSync(delay) {
+    if (!cloudId || !cloudReady) return;
+    clearTimeout(cloudTimer);
+    cloudTimer = setTimeout(cloudSync, delay == null ? 900 : delay);
+  }
+
+  // one sync cycle: pull, merge per item, push only if the merged result differs from the cloud copy
+  function cloudSync() {
+    if (!cloudId || !cloudReady) return;
+    if (cloudBusy) { cloudAgain = true; return; }
+    cloudBusy = true;
+    setSyncIndicator("syncing");
+    fetch(cloudUrl())
+      .then(function (res) {
+        if (res.status === 404) return null; // bucket exists but no value written yet
+        if (!res.ok) throw new Error("pull failed");
+        return res.text();
+      })
+      .then(function (text) {
+        var remote = null;
+        if (text) { try { remote = migrateState(JSON.parse(text)); } catch (e) { remote = null; } }
+        var merged = remote ? mergeStates(state, remote) : state;
+        var localChanged = !!remote && canon(merged) !== canon(state);
+        state = merged;
+        if (localChanged) { saveLocalOnly(); renderSafe(); }
+        var needPush = !remote || canon(publicView(merged)) !== canon(remote);
+        if (!needPush) return true;
+        return fetch(cloudUrl(), { method: "PUT", body: JSON.stringify(publicView(state)) }).then(function (res) { return res.ok; });
+      })
+      .then(function (ok) { lastSyncAt = Date.now(); setSyncIndicator(ok ? "synced" : "error"); })
+      .catch(function () { setSyncIndicator("error"); })
+      .then(function () {
+        cloudBusy = false;
+        if (cloudAgain) { cloudAgain = false; scheduleCloudSync(300); }
+      });
+  }
+
+  function cloudPush() { scheduleCloudSync(900); }
+
+  // if the merge changes data while the user is typing, wait until they leave the field so nothing is lost
+  var pendingRender = false;
+  function isEditingNow() {
+    var a = document.activeElement;
+    return !!a && (a.tagName === "TEXTAREA" || (a.tagName === "INPUT" && a.type !== "checkbox"));
+  }
+  function renderSafe() {
+    if (isEditingNow()) pendingRender = true; else renderAll();
+  }
+  document.addEventListener("focusout", function () {
+    if (!pendingRender) return;
+    setTimeout(function () { if (pendingRender && !isEditingNow()) { pendingRender = false; renderAll(); } }, 120);
+  });
+
+  var DOMAINS = [
+    { key: "jamaica", name: "ג'מייקה", color: "var(--jungle)",
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17c1.5 1.3 3 1.3 4.5 0s3-1.3 4.5 0 3 1.3 4.5 0 3-1.3 4.5 0"></path><path d="M2 12c1.5 1.3 3 1.3 4.5 0s3-1.3 4.5 0 3 1.3 4.5 0 3-1.3 4.5 0"></path><circle cx="12" cy="5" r="2.2"></circle></svg>' },
+    { key: "marley", name: "מארלי", color: "var(--sunset)",
+      icon: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="7" cy="8" r="1.7"></circle><circle cx="12" cy="6" r="1.7"></circle><circle cx="17" cy="8" r="1.7"></circle><circle cx="19.3" cy="12.3" r="1.6"></circle><path d="M12 11.2c-2.6 0-4.8 1.9-5.2 4.4-.3 1.9 1.1 3.4 2.9 3.1.9-.1 1.5-.6 2.3-.6s1.4.5 2.3.6c1.8.3 3.2-1.2 2.9-3.1-.4-2.5-2.6-4.4-5.2-4.4z"></path></svg>' },
+    { key: "music", name: "מוזיקה", color: "var(--violet)",
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 13v-2"></path><path d="M7 16V8"></path><path d="M11 19V5"></path><path d="M15 16V8"></path><path d="M19 13v-2"></path><path d="M21 12.5v-1"></path></svg>' },
+    { key: "work", name: "עבודה וכסף", color: "var(--sea)",
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="7.5" width="19" height="12" rx="2"></rect><path d="M8 7.5V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1.5"></path><path d="M2.5 12.5h19"></path><path d="M11 12.5v2"></path></svg>' },
+    { key: "routine", name: "שגרה", color: "var(--routine)",
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.36L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15.5 6.36L3 16"></path><path d="M3 21v-5h5"></path></svg>' }
+  ];
+
+  var DEFAULT_SETTINGS = { friendName: "אייל", moveDate: "2027-03-01" };
+
+  var SEED_TASKS = [
+    { id: "jam-1", domain: "jamaica", title: "לברר אם ויזה נדרשת לישראלים בכניסה לג'מייקה", notes: "יש הבדל בין ביקור קצר לבין מעבר קבע — לבדוק מול הנציגות של ג'מייקה", priority: 1 },
+    { id: "jam-2", domain: "jamaica", title: "להתחיל תהליך תושבות דרך PICA", notes: "דרכון בתוקף, תעודת לידה מאושרת, תעודת יושר, אישור מצב כלכלי, 2 תמונות פספורט, פרטי 2 ממליצים", priority: 1 },
+    { id: "jam-3", domain: "jamaica", title: "לברר על היתר עבודה — זה תהליך נפרד מהתושבות", notes: "תושבות לא כוללת אוטומטית היתר עבודה — מול Ministry of Labour, בדרך כלל מותנה בהצעת עבודה קיימת", priority: 2 },
+    { id: "jam-4", domain: "jamaica", title: "להזמין טיסה עם נחיתה בקינגסטון בלבד", notes: "נקודת הכניסה היחידה המאושרת לייבוא כלבים לארץ", priority: 2 },
+    { id: "jam-5", domain: "jamaica", title: "לבנות תקציב מעבר מלא", notes: "אריזה, מכירה/החסנה של תכולת הבית, הוצאות ראשוניות בג'מייקה", priority: 2 },
+    { id: "jam-6", domain: "jamaica", title: "לסדר ביטוח בריאות ורישום כתושב זר", notes: "Registration of Aliens — נדרש לשוהים מעל 6 חודשים", priority: 3 },
+    { id: "jam-7", domain: "jamaica", title: "לבחור אזור מגורים מתאים", notes: "אקלים, קרבה לים, קהילה, נגישות לעבודה", priority: 3 },
+    { id: "jam-8", domain: "jamaica", title: "לברר איך ממירים רישיון נהיגה", notes: "רישיון זר תקף רק 3 חודשים מהכניסה. אין המרה ישירה — צריך מבחן עיוני ומעשי, חוץ אם יש ותק של 6+ שנים על הרישיון הקיים", priority: 2 },
+    { id: "jam-9", domain: "jamaica", title: "לברר מה צריך כדי לפתוח חשבון בנק בג'מייקה", notes: "בד\"כ: דרכון, מסמך זיהוי נוסף, אישור כתובת, מכתב מעסיק/הכנסה, ו-2 ממליצים שמכירים אתכם 2+ שנים — רק בסניף פיזי", priority: 2 },
+    { id: "jam-10", domain: "jamaica", title: "ללמוד כמה מילים בפטואה ולהכיר את התרבות המקומית", notes: "מקל מאוד על ההשתלבות היומיומית", priority: 3 },
+    { id: "jam-11", domain: "jamaica", title: "לנסות למצוא מישהו שכבר גר שם ולדבר איתו", notes: "עצה ממקור ראשון שווה יותר מכל חיפוש בגוגל", priority: 3 },
+    { id: "jam-12", domain: "jamaica", title: "להכין מסמכים בישראל: תעודת יושר, אפוסטיל ותרגום", notes: "תעודת יושר מונפקת בעברית בלבד — צריך תרגום נוטריוני ואפוסטיל", priority: 1 },
+    { id: "jam-13", domain: "jamaica", title: "להוציא TRN ולהירשם ל-NIS", notes: "TRN חינם ונדרש לפעולות מול בנקים ולתיק היתר עבודה. NIS הוא הביטוח הלאומי של ג'מייקה", priority: 2 },
+    { id: "jam-14", domain: "jamaica", title: "לסגור עניינים בישראל: מס, ביטוח לאומי וקופת חולים", notes: "לברר איך יציאה ממושכת משפיעה על תושבות, זכויות וכיסוי רפואי", priority: 2 },
+
+    { id: "mar-1", domain: "marley", title: "למפות את סף חרדת הנטישה הנוכחי של מארלי", notes: "לצאת לכמה שניות בלי טריגרים (מפתחות/נעליים) ולמדוד תגובה — נקודת הפתיחה לאימון", priority: 1 },
+    { id: "mar-2", domain: "marley", title: "להשעות בינתיים היעדרויות ארוכות מהבית", notes: "לא לתת לו לחוות שוב את שיא הפאניקה בזמן שבונים סבלנות מאפס", priority: 1 },
+    { id: "mar-3", domain: "marley", title: "לבנות אסוציאציה חיובית לארגז/כלוב", notes: "אוכל ומנוחה בפנים עם דלת פתוחה — לפני שסוגרים דלת בכלל", priority: 1 },
+    { id: "mar-4", domain: "marley", title: "להעלות זמן היעדרות בהדרגה, בקצב שלו", notes: "קידמה לא ליניארית — ימי גשם או שינוי שגרה ישפיעו, זו לא נסיגה אמיתית", priority: 2 },
+    { id: "mar-5", domain: "marley", title: "להתרגל בהדרגה לזמן שהייה סגור בארגז", notes: "המטרה: להתאים בסוף למשך הטיסה לג'מייקה", priority: 2 },
+    { id: "mar-6", domain: "marley", title: "להשתיל שבב זיהוי למארלי", notes: "שבב בתקן בינלאומי ISO 11784/11785 — חובה כצעד ראשון לפני כל שאר תהליך היבוא", priority: 1 },
+    { id: "mar-7", domain: "marley", title: "לחסן את מארלי נגד כלבת בזמן הנכון", notes: "לא פחות מ-3 ולא יותר מ-12 חודשים לפני הכניסה לג'מייקה", priority: 2 },
+    { id: "mar-8", domain: "marley", title: "לבצע בדיקת דם לנוגדני כלבת", notes: "מעבדה מאושרת OIE/WHO, 3–12 חודשים לפני הכניסה, ולפחות 30 יום אחרי החיסון", priority: 2 },
+    { id: "mar-9", domain: "marley", title: "לתת טיפול נגד טפילים פנימיים", notes: "שני טיפולים בהפרש 14+ יום, האחרון עד 7 ימים לפני הטיסה", priority: 2 },
+    { id: "mar-10", domain: "marley", title: "לתת טיפול נגד טפילים חיצוניים", notes: "שני טיפולים בהפרש 14 יום, האחרון עד 48 שעות לפני הטיסה", priority: 2 },
+    { id: "mar-11", domain: "marley", title: "להוציא אישור יבוא רשמי לכלב", notes: "ממשרד החקלאות של ג'מייקה, בתוקף 3 חודשים בלבד — לתזמן בקפידה מול תאריך הטיסה בפועל", priority: 2 },
+    { id: "mar-12", domain: "marley", title: "להוציא תעודת בריאות לפני הטיסה", notes: "עד 10 ימים לפני הטיסה, חתומה ע\"י וטרינר מוסמך מטעם המדינה", priority: 3 },
+    { id: "mar-13", domain: "marley", title: "לתאם מראש עם הווטרינר בשדה התעופה בקינגסטון", notes: "יתכן הסגר של עד 14 יום במתקן Plumb Point אם משהו לא תקין", priority: 3 },
+    { id: "mar-14", domain: "marley", title: "להמשיך לתרגל פקודות מתקדמות ומשחקי חשיבה", notes: "שומר עליו עסוק ורגוע ומקטין סיכוי להרס או חרדה כשהסביבה מתחלפת", priority: 2 },
+    { id: "mar-15", domain: "marley", title: "לחשוף אותו בהדרגה לרעשים וסביבות חדשות", notes: "הכנה נפשית לשינוי גדול — טיסה, בית חדש, אקלים אחר", priority: 2 },
+    { id: "mar-16", domain: "marley", title: "למצוא מראש וטרינר בג'מייקה להמשך טיפול", notes: "כדאי שיהיה מוכן לפני הנחיתה, לא אחריה", priority: 3 },
+
+    { id: "mus-1", domain: "music", title: "לסיים את קורס הבית / המבוא לאבלטון", notes: "", priority: 1 },
+    { id: "mus-2", domain: "music", title: "להשלים 3 טראקים ברמה טובה", notes: "תנאי סף לריאיון הקבלה לקורס המתקדם", priority: 1 },
+    { id: "mus-3", domain: "music", title: "להירשם לריאיון קבלה מול יועץ אקדמי ב-BPM", notes: "", priority: 2 },
+    { id: "mus-4", domain: "music", title: "להתחיל קורס מיקס ומאסטרינג מתקדם", notes: "16 מפגשים, 3 שעות בשבוע, כ-4 חודשים — כדאי שיסתיים או יתקדם משמעותית לפני המעבר", priority: 2 },
+    { id: "mus-5", domain: "music", title: "להקים חדר עבודה עם טיפול אקוסטי בסיסי", notes: "נדרש כדי לעבוד ברמה טובה מהבית", priority: 2 },
+    { id: "mus-6", domain: "music", title: "לבנות פורטפוליו מיקס לפני המעבר", notes: "בסיס לעבודה עצמאית בג'מייקה", priority: 3 },
+    { id: "mus-7", domain: "music", title: "לבחור סאונד/סגנון חתימה משלי", notes: "מתמקדים = בולטים יותר, גם מקצועית וגם עסקית", priority: 3 },
+    { id: "mus-8", domain: "music", title: "לתרגל ניתוח מיקס על שירי רפרנס", notes: "לבחור 5-10 שירים ברמה גבוהה ולנתח למה הם עובדים — תרגול קבוע בתעשייה", priority: 2 },
+    { id: "mus-9", domain: "music", title: "להתחיל לקחת פרויקטי מיקס אמיתיים", notes: "גם במחיר סמלי בהתחלה — כל פרויקט בונה ניסיון ותיק עבודות", priority: 2 },
+
+    { id: "wrk-1", domain: "work", title: "להגדיר את שני מסלולי ההכנסה", notes: "הוראת תופים לילדים + אילוף כלבים למשפחות", priority: 1 },
+    { id: "wrk-2", domain: "work", title: "לבנות מבנה שיעור והצעת מחיר להוראת תופים", notes: "גילאים, תדירות, משך שיעור", priority: 2 },
+    { id: "wrk-3", domain: "work", title: "לבנות חבילות שירות לאילוף כלבים למשפחות", notes: "חבילת בסיס מול מתקדם, ביקורי בית", priority: 2 },
+    { id: "wrk-4", domain: "work", title: "לפתוח נוכחות דיגיטלית לשני התחומים", notes: "עמוד או פרופיל בסיסי להצגת השירותים", priority: 2 },
+    { id: "wrk-5", domain: "work", title: "לבדוק רישוי נדרש לעבודה עצמאית בג'מייקה", notes: "בנפרד מהיתר עבודה רגיל", priority: 3 },
+    { id: "wrk-6", domain: "work", title: "לגבש כרית ביטחון כלכלית לחודשים הראשונים", notes: "", priority: 3 },
+    { id: "wrk-7", domain: "work", title: "לאסוף המלצות מתלמידים ולקוחות ראשונים", notes: "הכלי השיווקי הכי חזק בהתחלה", priority: 2 },
+    { id: "wrk-8", domain: "work", title: "לתמחר לפי השוק בג'מייקה, לא לפי ישראל", notes: "לבדוק מחירים מקומיים לפני שקובעים תעריף", priority: 2 },
+    { id: "wrk-9", domain: "work", title: "לבנות תוכנית שיווק פשוטה", notes: "רשתות חברתיות, מפה לאוזן, שיתופי פעולה עם מאמנים/מורים אחרים באזור", priority: 3 },
+    { id: "wrk-10", domain: "work", title: "להבין מיסוי עצמאי: מס הכנסה, NIS/NHT ו-GCT", notes: "סף פטור, מדרגות, דוח שנתי ותשלומים מקדמיים — הפרטים במשימה", priority: 3 },
+
+    { id: "rt-1", domain: "routine", title: "טיול בוקר למארלי", notes: "", priority: 1, recur: "daily" },
+    { id: "rt-2", domain: "routine", title: "טיול ערב למארלי", notes: "", priority: 1, recur: "daily" },
+    { id: "rt-3", domain: "routine", title: "ארוחות סדירות", notes: "לשמור על סדר יום קבוע", priority: 2, recur: "daily" },
+    { id: "rt-4", domain: "routine", title: "קניות וניקיון דירה", notes: "", priority: 2, recur: "weekly" },
+    { id: "rt-5", domain: "routine", title: "למשוך שקית", notes: "", priority: 3, recur: "weekly" }
+  ].map(function (t) {
+    // createdAt is a fixed constant (not "now") so the same seed task is byte-identical on every device and merges cleanly
+    return Object.assign({ done: false, dueDate: null, dueTime: null, recur: null, lastDoneAt: null, doneLog: [], createdAt: "2026-09-13T00:00:00.000Z", completedAt: null, details: "", checklist: [], guideSeen: [], updatedAt: 0 }, t);
+  });
+
+  /* ---------------- guides: expanded content per seed task ----------------
+     Each guide seeds a task's "details" text and checklist ONCE (tracked per item in task.guideSeen),
+     so later edits/deletions by the user are never overwritten, while new items added in future
+     versions still arrive. Guides are kept short: key points only.
+     Sources checked 19.9.2026: PICA, MLSS, TAJ, MIIC, JIS, PwC Tax Summaries, HCCH, PetTravel (Jamaica dog import),
+     ASPCA, AVSAB, IATA. Points marked "לאמת" or "לברר" were not confirmed on an official page. */
+  var URL_PICA = "https://www.pica.gov.jm/immigration/permanent-residence";
+  var URL_PICA_EXT = "https://www.pica.gov.jm/immigration/extension-of-stays";
+  var URL_MLSS_WP = "https://www.mlss.gov.jm/departments/work-permit/";
+  var URL_JIS_WP = "https://jis.gov.jm/information/faqs/applying-for-a-jamaican-work-permit/";
+  var URL_TRN = "https://www.jamaicatax.gov.jm/trn1/";
+  var URL_NIS = "https://mlss.gov.jm/departments/national-insurance-scheme/";
+  var URL_ENTRY = "https://www.visitjamaica.com/plan-your-adventure/travel-tips/entry-requirements/";
+  var URL_HCCH = "https://www.hcch.net/en/news-archive/details/?varevent=764";
+  var URL_ILPOLICE = "https://www.gov.il/en/pages/requests-for-information-from-the-israel-police";
+  var URL_DOGIMPORT = "https://www.pettravel.com/information/pet-passports/jamaica-pet-import-requirements/";
+  var URL_ASPCA = "https://www.aspca.org/pet-care/dog-care/common-dog-behavior-issues/separation-anxiety";
+  var URL_AVSAB = "https://avsab.org/wp-content/uploads/2021/08/AVSAB-Humane-Dog-Training-Position-Statement-2021.pdf";
+  var URL_IATA_CRATE = "https://www.iata.org/contentassets/b0016da92c86449f850fe9560827bbea/pet-container-requirements.pdf";
+  var URL_MIIC_REG = "https://www.miic.gov.jm/registration-business-jamaica/";
+  var URL_TAJ_SELF = "https://www.jamaicatax.gov.jm/Self-employed/";
+  var URL_TAJ_SE_STAT = "https://www.jamaicatax.gov.jm/self-employed-statutory";
+  var URL_JIS_TAX = "https://jis.gov.jm/increase-in-income-tax-threshold-now-in-effect/";
+  var URL_PWC_TAX = "https://taxsummaries.pwc.com/jamaica/individual/taxes-on-personal-income";
+  var URL_GCT = "https://www.vatupdate.com/2025/03/13/jamaica-raises-gct-registration-threshold-in-2025-26-budget/";
+
+  var GUIDES = {
+    "jam-1": {
+      details: "ישראלים נכנסים לרוב בלי ויזה לעד 90 יום (מקור משני — לאמת מול PICA). גם מי שעובר לגור נכנס כמבקר, ולכן צריך כרטיס חזרה או המשך. הארכת שהייה כמבקר מוגבלת ל-6 חודשים לכל היותר (PICA).",
+      steps: [
+        { t: "לאמת מול PICA (876-754-7422) דרישת ויזה ומשך שהייה", url: "https://www.pica.gov.jm/faqs" },
+        { t: "דרכון בתוקף 6+ חודשים מעבר לסוף השהייה הצפויה" },
+        { t: "כרטיס חזרה או המשך, וטופס C5 אונליין לפני הנחיתה", url: URL_ENTRY },
+        { t: "ביומן: יום 60 = להגיש הארכת שהייה, לפני יום 90" }
+      ]
+    },
+    "jam-2": {
+      details: "תושבות קבע: עבודה 3+ שנים, פרישה, נישואין או תלות. המסלול המעשי: כניסה כמבקר, הארכות שהייה, היתר עבודה, ואחרי 3 שנות עבודה בקשת תושבות. עיבוד 3 עד 6 חודשים, מסמכים מקוריים.",
+      steps: [
+        { t: "דרכון בתוקף 6+ חודשים", url: URL_PICA },
+        { t: "תעודת לידה ותעודת יושר, עם תרגום ואפוסטיל" },
+        { t: "אישור רפואי מקומי ו-2 תמונות פספורט מאושרות ע״י Justice of the Peace" },
+        { t: "אישורי הכנסה ומצב כלכלי; לעצמאי: רישום עסק ותעודת ציות מס" },
+        { t: "מכתב ל-CEO של PICA ו-2 מכתבי המלצה מג'מייקנים" },
+        { t: "הארכת שהייה לפני שנגמרת הכניסה הראשונה", url: URL_PICA_EXT },
+        { t: "אחרי 3 שנות עבודה: בקשת תושבות קבע וראיון", url: URL_PICA }
+      ]
+    },
+    "jam-3": {
+      details: "היתר עבודה מוגש דרך המעסיק או, לעצמאי, במילוי הטופס ב-Work Permit Department (MLSS). אגרת טיפול JMD 14,400 ואגרת היתר לפי משך: 27,000 (עד 3 חודשים) עד 108,000 (9 עד 12 חודשים). אישור כ-4 עד 6 שבועות. ההיתר הוא הבסיס לשהייה ולספירת 3 שנות עבודה לתושבות.",
+      steps: [
+        { t: "טופס הבקשה מאתר MLSS (חלק 1 וחלק 2)", url: URL_MLSS_WP },
+        { t: "מכתב לראש המשרד: מהות העבודה, משך ומאמצי גיוס מקומי", url: URL_JIS_WP },
+        { t: "תעודות מקצועיות מאושרות, קורות חיים והמלצה" },
+        { t: "תעודת יושר, העתקי דרכון ו-2 תמונות" },
+        { t: "לעצמאי: רישום עסק, תעודת ציות מס ו-TRN" },
+        { t: "אגרת טיפול 14,400 והגשת 3 עותקים; אחרי אישור — אגרת היתר" },
+        { t: "לברר מול MLSS אם הוראת תופים ואילוף כלבים דורשות רישוי נוסף" }
+      ]
+    },
+    "jam-4": {
+      details: "נחיתה בקינגסטון (KIN) היא התנאי ליבוא כלבים. אישור היבוא של מארלי תקף 3 חודשים ותעודת הבריאות עד 10 ימים לפני הטיסה, ולכן מתזמנים את הטיסה סביבם.",
+      steps: [
+        { t: "לקבוע מועד נחיתה רק אחרי לוח זמנים ליבוא הכלב (משימות מארלי)" },
+        { t: "לבדוק מדיניות כלבים בחברות תעופה: תא או מטען, ארגז, טמפרטורה" },
+        { t: "כרטיס חזרה או המשך (חובה לכניסה)", url: URL_ENTRY },
+        { t: "לסגור לינה ראשונה שמקבלת כלבים" }
+      ]
+    },
+    "jam-5": {
+      details: "עלויות חד-פעמיות ומחיה לחודשים הראשונים. היתר עבודה: JMD 14,400 ועוד 27,000 עד 108,000 לפי משך. שאר הסכומים: מהצעות מחיר בפועל.",
+      steps: [
+        { t: "טיסה וכרטיס חזרה או המשך" },
+        { t: "מארלי: טיסה, ארגז, חיסונים, בדיקת נוגדנים ואישורים" },
+        { t: "היתר עבודה והארכות שהייה ב-PICA", url: URL_JIS_WP },
+        { t: "הובלה, מכירה או החסנה של תכולת הבית" },
+        { t: "מגורים: פיקדון ושכירות ראשונה" },
+        { t: "ביטוח בריאות וציוד לחדר עבודה" },
+        { t: "כרית ביטחון ל-3 עד 6 חודשי מחיה" }
+      ]
+    },
+    "jam-6": {
+      details: "לקבוע איך מכוסים רפואית בג'מייקה ומה קורה עם הכיסוי בישראל. Registration of Aliens הופיע כדרישה בבדיקה קודמת ולא אומת — לוודא מול PICA.",
+      steps: [
+        { t: "לוודא מול PICA אם נדרש Registration of Aliens" },
+        { t: "להשוות ביטוח בינלאומי מול מקומי: תקרה, פינוי רפואי, מצבים קיימים" },
+        { t: "פוליסה תקפה כבר מיום הנחיתה" },
+        { t: "לברר מול קופת החולים והביטוח הלאומי על הכיסוי בישראל" }
+      ]
+    },
+    "jam-7": {
+      details: "האזור משפיע על העבודה, על מארלי ועל התקציב. עדיף להחליט אחרי ביקור, לא מרחוק.",
+      steps: [
+        { t: "קריטריונים: חוף, שקט לעבודת סאונד, קרבה לעיר, תקציב" },
+        { t: "אינטרנט וחשמל יציבים — קריטי לעבודה בסאונד" },
+        { t: "בעל הבית מאשר כלבים ורעש" },
+        { t: "תקופת ניסיון לפני חוזה ארוך, ובטיחות — דרך תושבים מקומיים" }
+      ]
+    },
+    "jam-8": {
+      details: "לפי בדיקה קודמת: רישיון זר תקף 3 חודשים מהכניסה, אין המרה ישירה ויש מבחן עיוני ומעשי, פטור למי שרישיונו בן 6+ שנים. לא אומת היום — לאמת מול TAJ.",
+      steps: [
+        { t: "לרשום תאריך כניסה: 3 חודשי תוקף לרישיון הישראלי" },
+        { t: "ותק הרישיון: 6+ שנים = פטור (לאמת)" },
+        { t: "TRN לפני הגשת הבקשה", url: URL_TRN },
+        { t: "לאמת מול TAJ דרישות עדכניות, ולהירשם למבחן אם נדרש" }
+      ]
+    },
+    "jam-9": {
+      details: "בנקים דורשים בדרך כלל דרכון, מסמך זיהוי נוסף, אישור כתובת, הוכחת הכנסה ו-2 ממליצים שמכירים אותך 2+ שנים, לרוב בסניף פיזי (לפי בדיקה קודמת). TRN נדרש.",
+      steps: [
+        { t: "TRN — חינם", url: URL_TRN },
+        { t: "דרכון, מסמך זיהוי נוסף ואישור כתובת" },
+        { t: "הוכחת הכנסה (לעצמאי: חוזי לקוחות) ו-2 ממליצים" },
+        { t: "פגישה בסניף פיזי, ולהשוות עמלות בכמה בנקים" }
+      ]
+    },
+    "jam-10": {
+      details: "אנגלית היא השפה הרשמית ופטואה היא שפת היומיום. כמה ביטויים בסיסיים מקלים על ההיכרות.",
+      steps: [
+        { t: "Wah gwaan — מה קורה / מה שלומך" },
+        { t: "Mi deh yah — אני כאן / אני בסדר" },
+        { t: "Irie — טוב, הכול בסדר" },
+        { t: "להאזין לפטואה 15 דקות ביום: מוזיקה, רדיו ופודקאסטים" }
+      ]
+    },
+    "jam-11": {
+      details: "שיחה אחת עם מי שכבר גר שם חוסכת חודשים. להגיע עם שאלות מוכנות.",
+      steps: [
+        { t: "למצוא 2 עד 3 אנשים: קבוצות מהגרים, חברים של חברים, קהילות מוזיקה" },
+        { t: "לשאול: עלות חיים בפועל, איך היתר העבודה עובד בפועל, מה הפתיע" },
+        { t: "לשאול על ביקוש ומחירים באילוף כלבים ובשיעורי מוזיקה" },
+        { t: "לבקש המלצה על וטרינר, בנק ועורך דין להגירה" }
+      ]
+    },
+    "jam-12": {
+      details: "תעודת יושר מונפקת בעברית בלבד, ולשימוש בחו״ל צריך תרגום נוטריוני ואפוסטיל. ג'מייקה חברה באמנת האפוסטיל מ-3.7.2021, ולכן אין צורך בלגליזציה קונסולרית.",
+      steps: [
+        { t: "לבקש תעודת יושר מהמשטרה", url: URL_ILPOLICE },
+        { t: "תעודת לידה מקורית" },
+        { t: "תרגום נוטריוני לאנגלית" },
+        { t: "אפוסטיל דרך משרד החוץ, ולשמור סריקה של כל מסמך", url: URL_HCCH }
+      ]
+    },
+    "jam-13": {
+      details: "TRN הוא מספר נישום ג'מייקני (חינם), נדרש מול בנקים וגורמי ממשל ונכלל בתיק היתר העבודה. NIS הוא הביטוח הלאומי: חובה בעבודה מבוטחת בגילאי 18 עד 70, ואפשרי גם כמשתתף וולנטרי.",
+      steps: [
+        { t: "לבקש TRN בכל משרד מס או בדואר (TAJ, 116 East Street, Kingston)", url: URL_TRN },
+        { t: "לבקשה מחוץ לג'מייקה: אישור נוטריון לדרכון או לרישיון" },
+        { t: "טופס בקשה למספר NIS ב-Parish Office, עם תעודת לידה או דרכון", url: URL_NIS },
+        { t: "לעצמאי: Voluntary Contributor Application Form (דורש אישור)", url: URL_NIS }
+      ]
+    },
+    "jam-14": {
+      details: "אלו נקודות בדיקה ולא מסקנות: כל גוף קובע לפי המקרה.",
+      steps: [
+        { t: "רשות המסים: השפעה על תושבות מס ומה לדווח" },
+        { t: "ביטוח לאומי וקופת חולים: זכויות וכיסוי בחו״ל" },
+        { t: "אם רלוונטי: צבא — מילואים ואישור יציאה ממושכת" },
+        { t: "לסגור או להקפיא הוראות קבע, מנויים ודיוור" },
+        { t: "להשאיר בישראל אדם מוסמך לענייני חירום" }
+      ]
+    },
+
+    "mar-1": {
+      details: "חרדת נטישה היא תגובת מצוקה ולא עקשנות או נקמה (ASPCA). סימנים: ריור, פסיעה וחרדה גלויה כשמתכוננים לצאת. שעמום נראה אחרת: בלי חרדה. נקודת הפתיחה: הזמן הקצר ביותר שהוא עדיין רגוע.",
+      steps: [
+        { t: "לצאת כמה שניות בלי טריגרים (מפתחות, נעליים), ולצלם את התגובה", url: URL_ASPCA },
+        { t: "לרשום את הזמן הארוך ביותר שבו נשאר רגוע — זו נקודת הפתיחה" },
+        { t: "וטרינר: לשלול סיבה רפואית לפני תוכנית אימון" },
+        { t: "אם המצוקה חזקה: וטרינר התנהגות או CAAB. שילוב תרופה ואימון מהיר לרוב יותר (ASPCA)" }
+      ]
+    },
+    "mar-2": {
+      details: "בזמן בניית התוכנית כל אירוע פאניקה מחזק את החרדה. עד שיש התקדמות, להימנע מהיעדרויות שעוברות את הסף שנמדד.",
+      steps: [
+        { t: "להסדיר מראש שמישהו נמצא איתו כשאי אפשר להישאר" },
+        { t: "יציאה הכרחית: הליכה ארוכה לפני, וקונג ממולא בזמן היציאה (ASPCA)", url: URL_ASPCA },
+        { t: "לרשום כל אירוע פאניקה: שעה, מה קדם לו, כמה זמן נמשך" }
+      ]
+    },
+    "mar-3": {
+      details: "המטרה: שהארגז יהיה מקום טוב ולא מלכודת. קודם אוכל ומנוחה בפנים עם דלת פתוחה. אם יש התנשפות כבדה, ריור או בריחה בפאניקה — הארגז מגביר מצוקה (ASPCA).",
+      steps: [
+        { t: "ארגז פתוח עם מצעים; להאכיל אותו שם" },
+        { t: "חטיפים כשהוא נכנס מעצמו" },
+        { t: "רק אחרי שנכנס ונרגע: לסגור את הדלת לכמה שניות" },
+        { t: "להפסיק מיד אם יש התנשפות כבדה, ריור או ניסיון בריחה", url: URL_ASPCA }
+      ]
+    },
+    "mar-4": {
+      details: "לפי ASPCA: מתחילים מ-1 עד 2 שניות ומעלים בהדרגה על פני שבועות, כמה פעמים ביום, עד כ-40 דקות, ורק אז מאריכים. הקצב נקבע לפי מארלי. נסיגה זמנית (גשם, שינוי שגרה) לא אומרת שהתוכנית נכשלה.",
+      steps: [
+        { t: "להתחיל מ-1 עד 2 שניות, כמה פעמים ביום", url: URL_ASPCA },
+        { t: "להעלות רק אחרי כמה חזרות רגועות" },
+        { t: "לתרגל את הטריגרים (מפתחות, נעליים, דלת) בלי לצאת, כדי לנתק אותם מהעזיבה" },
+        { t: "אם מופיעים סימני מצוקה: לחזור צעד אחורה" },
+        { t: "להגיע ל-40 דקות ורק אז להאריך" }
+      ]
+    },
+    "mar-5": {
+      details: "המטרה: שהייה סגורה בארגז שמתאימה לטיסה. להתחיל רק אחרי שהוא נכנס לארגז ברצון ונשאר רגוע. הארגז חייב להתאים לתקן IATA: קשיח, מאוורר, ובגודל שמאפשר לעמוד, לשבת, לשכב ולהסתובב.",
+      steps: [
+        { t: "כמה דקות סגור בארגז עם אוכל, ולהעלות בהדרגה" },
+        { t: "לאמן בדיוק בארגז שבו יטוסו", url: URL_IATA_CRATE },
+        { t: "לתרגל תנועה: הזזת הארגז והנסיעה ברכב" },
+        { t: "לתעד את זמן השהייה הרגוע המרבי" },
+        { t: "לבדוק מול חברת התעופה גודל ותנאי ארגז לפני שקונים" }
+      ]
+    },
+    "mar-6": {
+      details: "שבב ISO 11784/11785 בן 15 ספרות. קודם שבב ורק אחר כך חיסון כלבת, כדי שהחיסון והבדיקות יירשמו על השבב. מקור: PetTravel — לאמת מול משרד החקלאות של ג'מייקה.",
+      steps: [
+        { t: "לשתול אצל וטרינר שבב 15 ספרות ISO 11784/11785", url: URL_DOGIMPORT },
+        { t: "לוודא שהווטרינר סורק ורושם את מספר השבב בכל מסמך" },
+        { t: "אם כבר יש שבב שאינו ISO: לברר אם נדרש שבב חדש" }
+      ]
+    },
+    "mar-7": {
+      details: "חיסון כלבת חייב להיות אחרי השבב, בתוך 12 חודשים לפני הכניסה, ולא חיסון תלת-שנתי. תאריך החיסון קובע את מועד בדיקת הנוגדנים (30 יום אחריו).",
+      steps: [
+        { t: "לוודא שהשבב כבר הושתל", url: URL_DOGIMPORT },
+        { t: "חיסון כלבת חד-שנתי (לא תלת-שנתי) בתוך 12 חודשים לפני הכניסה" },
+        { t: "לרשום מספר שבב, סוג חיסון ותאריך בכל מסמך" }
+      ]
+    },
+    "mar-8": {
+      details: "בדיקת נוגדנים לכלבת (titer) במעבדה מאושרת OIE/WHO: לפחות 30 יום אחרי החיסון הראשוני, 3 עד 12 חודשים לפני הכניסה.",
+      steps: [
+        { t: "דגימת דם אצל וטרינר, לפחות 30 יום אחרי החיסון", url: URL_DOGIMPORT },
+        { t: "לוודא שהמעבדה מאושרת OIE/WHO ולבדוק מול משרד החקלאות של ג'מייקה" },
+        { t: "לשמור את תוצאת המקור" },
+        { t: "לתזמן כך שהכניסה תהיה 3 עד 12 חודשים אחרי הדגימה" }
+      ]
+    },
+    "mar-9": {
+      details: "שני טיפולים נגד טפילים פנימיים, בהפרש 14+ יום, והאחרון עד 7 ימים לפני הטיסה.",
+      steps: [
+        { t: "לחשב את שני התאריכים אחורה מתאריך הטיסה", url: URL_DOGIMPORT },
+        { t: "לרשום בתעודה סוג תרופה ותאריך" },
+        { t: "לתאם עם הוצאת תעודת הבריאות" }
+      ]
+    },
+    "mar-10": {
+      details: "שני טיפולים נגד טפילים חיצוניים, בהפרש 14 יום, והאחרון עד 48 שעות לפני הטיסה.",
+      steps: [
+        { t: "לחשב את שני התאריכים אחורה מתאריך הטיסה", url: URL_DOGIMPORT },
+        { t: "לרשום בתעודה סוג תרופה ותאריך" },
+        { t: "לתאם עם הוצאת תעודת הבריאות" }
+      ]
+    },
+    "mar-11": {
+      details: "אישור יבוא (Import Permit) ממשרד החקלאות של ג'מייקה, בתוקף 3 חודשים בלבד. גזעים אסורים: Dogo Argentino, Fila Brasileiro, Japanese Tosa, Pit Bull Terrier ושילובים שלהם.",
+      steps: [
+        { t: "לוודא שהגזע של מארלי (וערבובים) לא ברשימה האסורה", url: URL_DOGIMPORT },
+        { t: "לפנות למשרד החקלאות של ג'מייקה, ולאמת את הטופס והנוהל העדכניים" },
+        { t: "לבקש סמוך לטיסה כדי שהאישור יהיה בתוקף בנחיתה" },
+        { t: "לשמור עותק מודפס לטיסה" }
+      ]
+    },
+    "mar-12": {
+      details: "תעודת בריאות באנגלית, עד 10 ימים לפני הטיסה, חתומה בידי וטרינר ממשלתי ורשות היצוא. בנוסף בדיקה תוך 48 שעות לגידול מין מדבק ולשפעת כלבים.",
+      steps: [
+        { t: "לקבל ממשרד החקלאות של ג'מייקה את הטופס העדכני", url: URL_DOGIMPORT },
+        { t: "וטרינר: בדיקה, חיסונים, טפילים ורישום השבב" },
+        { t: "חתימת הרשות בישראל (השירותים הווטרינריים)" },
+        { t: "בדיקת 48 שעות: גידול מין מדבק ושפעת כלבים" },
+        { t: "לוודא שהכול בתוך 10 ימים מהטיסה" }
+      ]
+    },
+    "mar-13": {
+      details: "נחיתה בקינגסטון בלבד, אלא אם הווטרינר הראשי (CVO) אישר אחרת. אפשר הסגר של 14 יום ב-Plumb Point לפי שיקול הבודק.",
+      steps: [
+        { t: "לתאם מראש קבלה עם הווטרינר בשדה התעופה", url: URL_DOGIMPORT },
+        { t: "להביא מסמכים מקוריים: אישור יבוא, תעודת בריאות, חיסונים, תוצאת נוגדנים" },
+        { t: "לברר עלות ותנאי ההסגר" },
+        { t: "תוכנית לינה לכל 14 הימים אם יידרש" }
+      ]
+    },
+    "mar-14": {
+      details: "לפי AVSAB, אימון מבוסס חיזוק נותן את היתרונות הרבים ביותר ואת הפגיעה הקטנה ביותר, ואילו שיטות עונשין קשורות לחרדה ולתוקפנות. משחקי חשיבה נותנים פורקן לראש.",
+      steps: [
+        { t: "אימונים של 5 עד 10 דקות כמה פעמים ביום עם חיזוקים", url: URL_AVSAB },
+        { t: "פקודות: מקום, חכה, בוא, שכיבה רגועה על מצע" },
+        { t: "משחקי חשיבה: חטיפים חבויים, חיפוש ריח, קונג ממולא" },
+        { t: "בלי עונשים, צעקות או כלי אימון מכאיבים" }
+      ]
+    },
+    "mar-15": {
+      details: "חשיפה הדרגתית בקצב של מארלי, עם חיזוק על רגיעה. אם הוא מגיב בפחד: להקטין עוצמה או להתרחק.",
+      steps: [
+        { t: "רעשים בעוצמה נמוכה עם חטיף, ולהעלות לאט" },
+        { t: "מקומות חדשים בקצב שלו: מעלית, מדרגות, רחוב סואן" },
+        { t: "נסיעות ברכב בארגז" },
+        { t: "אם יש ריור, הצמדות או רעד: לחזור צעד אחורה" }
+      ]
+    },
+    "mar-16": {
+      details: "לסגור וטרינר מקומי לפני הנחיתה, כדי שיהיה מוכן לביקור ראשון אחריה.",
+      steps: [
+        { t: "לבקש המלצות מקהילות מהגרים ומהתושבים המקומיים" },
+        { t: "לברר שעות חירום, תשלום ושפה" },
+        { t: "להעביר את התיק הרפואי: חיסונים, שבב ותוצאת נוגדנים" },
+        { t: "לשאול על טפילים ומחלות אזוריות, כמו קרציות ותולעי לב" }
+      ]
+    },
+
+    "mus-1": {
+      details: "הבסיס לפני קורס מתקדם: זרימת עבודה, סאמפלינג, אוטומציה ומעבר נקי מרעיון למיקס ראשוני.",
+      steps: [
+        { t: "Session View מול Arrangement View — מתי כל אחד" },
+        { t: "Warping, Simpler ו-Sampler" },
+        { t: "MIDI, Instrument Racks ו-Drum Racks" },
+        { t: "Sends, Returns ו-Groups" },
+        { t: "אוטומציה ואפקטי בסיס: EQ Eight, Compressor, Glue Compressor, Limiter, Reverb, Delay" },
+        { t: "יצוא WAV 24-bit ותבנית פרויקט אישית" }
+      ]
+    },
+    "mus-2": {
+      details: "שלושה טראקים גמורים הם תנאי הסף. גמור עדיף על מושלם.",
+      steps: [
+        { t: "דדליין לכל טראק, ולא להתחיל את הבא לפני Bounce" },
+        { t: "שלבים: לופ מרכזי, מבנה מלא, עיצוב סאונד, מיקס גס, בדיקה מול רפרנס" },
+        { t: "לבדוק באוזניות, ברמקולים ובטלפון" },
+        { t: "לבחור את 3 הטובים, ולתעד BPM וסולם" }
+      ]
+    },
+    "mus-3": {
+      details: "הריאיון הוא הזדמנות לוודא שהתוכנית מתאימה ללוח הזמנים (מעבר במרץ 2027).",
+      steps: [
+        { t: "להכין 3 טראקים לשמיעה" },
+        { t: "לנסח מטרה: מה להשיג עד המעבר" },
+        { t: "לשאול: מחיר, מועדי פתיחה, שיעורים שהוחמצו, השלמה אונליין" },
+        { t: "לוודא שמועד הסיום לפני תאריך המעבר" }
+      ]
+    },
+    "mus-4": {
+      details: "16 מפגשים, 3 שעות בשבוע, כ-4 חודשים. כדי לסיים עד 1.3.2027 להתחיל לכל המאוחר סביב 1.11.2026, ועדיף לפני אמצע אוקטובר.",
+      steps: [
+        { t: "להירשם למחזור שמסתיים לפני 1.3.2027" },
+        { t: "3 שעות שבועיות ועוד 2 עד 3 שעות תרגול עצמי" },
+        { t: "פרויקט אישי אחד כפרויקט גמר, ולשמור את כל המיקסים לפורטפוליו" },
+        { t: "לתאם חומרים דיגיטליים לשימוש בג'מייקה" }
+      ]
+    },
+    "mus-5": {
+      details: "הצבת רמקולים נכונה, ספיגה בנקודות ההחזר הראשונות וטיפול בבסים בפינות. קצף דק סופג רק גבוהים ומשאיר את הבסים.",
+      steps: [
+        { t: "רמקולים ואוזניים במשולש שווה צלעות, אוזן בגובה הטוויטר" },
+        { t: "שולחן רחוק מהקיר, ורווח מאחורי הרמקולים" },
+        { t: "פאנלי ספיגה (צמר מינרלי, 10 ס״מ ומעלה) בנקודות ההחזר הראשונות; לזהות בעזרת מראה" },
+        { t: "מלכודות בס בפינות" },
+        { t: "בג'מייקה: חומרים עמידים ללחות ועובש. עוצמת האזנה קבועה במיקס" }
+      ]
+    },
+    "mus-6": {
+      details: "פורטפוליו טוב הוא מעט עבודות חזקות, עם לפני ואחרי, ששומעים מקצועי בכל מכשיר.",
+      steps: [
+        { t: "5 עד 8 עבודות חזקות בסגנונות שהלקוח האידיאלי מחפש" },
+        { t: "גרסאות לפני ואחרי (Raw Mix מול סופי) עם תיאור קצר" },
+        { t: "אתר אישי ו-SoundCloud או Bandcamp" },
+        { t: "אישור לקוח לפני פרסום, המלצה ופרטי קשר" }
+      ]
+    },
+    "mus-7": {
+      details: "סאונד חתימה נבנה מהחלטות חוזרות: בס, תופים, קול וחלל. ברגאיי, דאב ודאנסהול: ביט One Drop עם דגש על הפעימה השלישית, בס כבד, ודיליי וריוורב יצירתיים.",
+      steps: [
+        { t: "סגנון עיקרי אחד להתמקד בו" },
+        { t: "3 אמנים או מיקסים כנקודת ייחוס" },
+        { t: "גיליון סאונד: תופים, בס, קול, חלל" },
+        { t: "דיליי וריוורב בסגנון דאב, ולבדוק עקביות אחרי כל פרויקט" }
+      ]
+    },
+    "mus-8": {
+      details: "לנתח רפרנס בעוצמה זהה, אחרת השיר החזק ישמע תמיד טוב יותר. כיעד סטרימינג: Spotify, YouTube, Tidal ו-Amazon מנרמלים סביב מינוס 14 LUFS, Apple Music סביב מינוס 16, ו-True Peak עד מינוס 1 dBTP. לשרת את המוזיקה, לא לרדוף אחרי מספר.",
+      steps: [
+        { t: "5 עד 10 שירי רפרנס איכותיים בסגנון היעד" },
+        { t: "Gain Matching עם Loudness Meter כמו Youlean החינמי" },
+        { t: "לנתח איזון תדרים, רוחב סטריאו ודינמיקה" },
+        { t: "3 מסקנות לכל שיר, ומיקס לפני מאסטר עם Headroom של 3 עד 6 dB" }
+      ]
+    },
+    "mus-9": {
+      details: "גם במחיר סמלי, לעבוד מקצועי מההתחלה: בריף, תנאים ברורים וחוויית לקוח טובה.",
+      steps: [
+        { t: "בריף לפני עבודה: סגנון, רפרנסים, לוח זמנים" },
+        { t: "סבבי תיקונים כלולים (למשל 2) ומחיר לסבב נוסף" },
+        { t: "Stems ב-WAV 24-bit מתחילת השיר, בלי עיבוד על ה-Master, עם BPM והערות" },
+        { t: "MP3 לאישור לפני הסופי, ובקשת המלצה וקרדיט" }
+      ]
+    },
+
+    "wrk-1": {
+      details: "שני מסלולים: הוראת תופים לילדים ואילוף כלבים למשפחות. לכל מסלול: קהל, שירות, מחיר וערוץ הגעה. היתר העבודה וסטטוס ההגירה קובעים מה מותר לעשות ומתי.",
+      steps: [
+        { t: "לכל מסלול: קהל יעד, שירות מדויק ומחיר" },
+        { t: "מבנה משפטי: עצמאי עם Business Name (משימת הרישוי)" },
+        { t: "מסלול עיקרי ומסלול משני לתחילת הדרך" }
+      ]
+    },
+    "wrk-2": {
+      details: "מבנה שיעור להתחלה, כנקודת פתיחה ולא נתון מאומת: שיעור שבועי קבוע של 30 עד 60 דקות לפי גיל. המחיר לפי השוק המקומי (משימת התמחור).",
+      steps: [
+        { t: "קבוצות גיל ורמות: מתחילים וממשיכים" },
+        { t: "מבנה שיעור: חימום, טכניקה, שיר, משחק קצב" },
+        { t: "מחיר לשיעור, חבילה חודשית ומדיניות ביטולים" },
+        { t: "ציוד: תופים או רפידות תרגול, ומגן שמיעה לילדים" },
+        { t: "מקום הלימוד ומדיניות בטיחות ילדים (לברר מה נדרש)" }
+      ]
+    },
+    "wrk-3": {
+      details: "חבילת בסיס: היכרות ופקודות יסוד. חבילה מתקדמת: מעקב, בעיות התנהגות והתאמה לבית. חרדת נטישה יכולה להיות התמחות בזכות הניסיון עם מארלי. עיקרון מקצועי: שיטות מבוססות חיזוק (AVSAB).",
+      steps: [
+        { t: "שירותים: פגישת היכרות, אימון בסיס, אימון מתקדם וביקורי בית" },
+        { t: "מחיר לפגישה ולחבילה, ותנאי ביטול" },
+        { t: "שיטת עבודה מוצהרת: חיזוק חיובי, בלי כלי אימון מכאיבים", url: URL_AVSAB },
+        { t: "לברר ביטוח אחריות מקצועית והסכם עם הלקוח (נשיכות, נזק)" },
+        { t: "לשקול הסמכה: Karen Pryor Academy, Jean Donaldson's Academy או Pet Professional Guild (מוזכרים ב-AVSAB)" }
+      ]
+    },
+    "wrk-4": {
+      details: "נוכחות בסיסית: עמוד אחד לכל תחום עם שירותים, מחיר, אזור ופרטי קשר.",
+      steps: [
+        { t: "שם עסק ופרופיל אחיד ברשתות" },
+        { t: "עמוד שירותים: מה, למי, מחיר, איך יוצרים קשר" },
+        { t: "תמונות וסרטונים רק באישור (לקוחות, הורי ילדים)" },
+        { t: "ערוץ קשר אחד ברור: טלפון או וואטסאפ" }
+      ]
+    },
+    "wrk-5": {
+      details: "עצמאי בג'מייקה = Business Name לפי Registration of Business Names Act, בטופס BRF 1 ב-Registrar of Companies (COJ). חובה TRN, וכתובת עסק בג'מייקה. אגרה לפי MIIC: J$2,500 לעצמאי (לאמת), תוקף 3 שנים. פעילות בלי רישום: אי אפשר לפרסם, ויש קנסות. רישוי מקצועי נוסף לאילוף או להוראה: לא אומת.",
+      steps: [
+        { t: "להשיג קודם היתר עבודה וסטטוס הגירה (משימת ההיתר)" },
+        { t: "TRN (משימת TRN ו-NIS)", url: URL_TRN },
+        { t: "טופס BRF 1 לרישום Business Name ב-COJ, כולל כתובת עסק", url: URL_MIIC_REG },
+        { t: "לברר מול MLSS ו-COJ אם אילוף כלבים או הוראה דורשים רישוי נוסף" },
+        { t: "אחרי הרישום: טופס S04 שנתי ב-TAJ (משימת המיסוי)", url: URL_TAJ_SELF }
+      ]
+    },
+    "wrk-6": {
+      details: "בחודשים הראשונים ההכנסה לא צפויה. הכרית מכסה מחיה, פיקדון והוצאות רשמיות. כלל אצבע נפוץ: 3 עד 6 חודשי הוצאות (הנחה כללית, לא נתון רשמי).",
+      steps: [
+        { t: "הוצאה חודשית משוערת: שכירות, אוכל, ביטוח, מארלי, תחבורה" },
+        { t: "חד-פעמיות: היתר, מעבר, פיקדון" },
+        { t: "יעד בשקלים ובדולרים, ובדיקה תקופתית של שער החליפין" },
+        { t: "הפרשה חודשית קבועה עד היעד" }
+      ]
+    },
+    "wrk-7": {
+      details: "המלצות ראשונות הן כלי השיווק החזק ביותר. לבקש מיד אחרי תוצאה טובה, בקצרה ובאישור פרסום.",
+      steps: [
+        { t: "5 לקוחות או תלמידים ראשונים במחיר סמלי, תמורת המלצה" },
+        { t: "המלצה כתובה קצרה ואישור פרסום" },
+        { t: "להוסיף לעמוד השירותים ולפורטפוליו" }
+      ]
+    },
+    "wrk-8": {
+      details: "המחיר נקבע לפי השוק המקומי, לא לפי ישראל. לא נמצא נתון מהימן לתעריפי שיעורי תופים או אילוף כלבים בג'מייקה, ולכן צריך לאסוף אותם בעצמך.",
+      steps: [
+        { t: "לאסוף 5 עד 10 מחירים מקומיים למורי תופים ולמאלפים (קבוצות, שיחות עם מקומיים)" },
+        { t: "מחיר מינימום: הוצאות, מס וזמן נסיעה" },
+        { t: "להתחיל במחיר סביר וגמיש ולעלות עם המלצות" },
+        { t: "לתמחר ב-JMD" }
+      ]
+    },
+    "wrk-9": {
+      details: "שיווק פשוט: מפה לאוזן, נוכחות מקומית ושיתופי פעולה. עדיף שניים-שלושה ערוצים בהתמדה על הרבה בלי יציבות.",
+      steps: [
+        { t: "לבחור 2 ערוצים עיקריים, למשל רשת חברתית וקבוצות שכונה" },
+        { t: "פוסט קבוע אחד בשבוע מהעבודה: לפני ואחרי, טיפים" },
+        { t: "שיתופי פעולה: וטרינרים, חנויות חיות, בתי ספר ומורים למוזיקה" },
+        { t: "להציע שיעור ניסיון או ייעוץ ראשוני" },
+        { t: "לרשום מאיפה הגיע כל לקוח" }
+      ]
+    },
+    "wrk-10": {
+      details: "מיסוי עצמאי בג'מייקה. סף הפטור ממס הכנסה: J$1,902,360 בשנה מ-1.4.2026 (JIS), וכ-J$2,003,496 מ-1.4.2027 (PwC). מס: 25% עד J$6 מיליון ו-30% מעל (PwC). תושב מס מקבל את הסף; מי שאינו תושב משלם 25% מהשקל הראשון (PwC). GCT: סף רישום J$15 מיליון (הועלה מ-10 בתקציב 2025/26, לאמת). NIS ו-NHT: לברר שיעורים בשנת הפעילות.",
+      steps: [
+        { t: "לברר אם אייל ייחשב תושב מס — זה קובע אם הסף חל עליו", url: URL_PWC_TAX },
+        { t: "סף הפטור העדכני והמדרגות", url: URL_JIS_TAX },
+        { t: "דוח שנתי S04 (כולל Schedule A ל-NHT ו-Schedule B ל-NIS)", url: URL_TAJ_SE_STAT },
+        { t: "תשלומים מקדמיים רבעוניים: 15.3, 15.6, 15.9 ו-15.12 (לפי TAJ, לאמת)", url: URL_TAJ_SELF },
+        { t: "GCT: רישום רק מעל הסף (J$15 מיליון), לאמת מול TAJ", url: URL_GCT },
+        { t: "לשמור קבלות וחשבוניות ולנהל רישום הכנסות והוצאות מיום הראשון" },
+        { t: "להיוועץ ברואה חשבון מקומי לפני הדוח הראשון" }
+      ]
+    }
+  };
+
+  // one-time text corrections for seed tasks that the user has NOT edited (every key in `from` must match exactly)
+  var SEED_PATCHES = {
+    "jam-2": {
+      from: { title: "להתחיל תהליך תושבות דרך PICA", notes: "דרכון בתוקף, תעודת לידה מאושרת, תעודת יושר, אישור מצב כלכלי, 2 תמונות פספורט, פרטי 2 ממליצים" },
+      to: { title: "להכין תיק מסמכים למעמד ב-PICA (הארכות שהייה ותושבות)", notes: "תושבות קבע דורשת בדרך כלל 3 שנות עבודה, פרישה, נישואין או תלות — בשנה הראשונה עובדים דרך הארכות שהייה והיתר עבודה" }
+    },
+    "mar-7": {
+      from: { notes: "לא פחות מ-3 ולא יותר מ-12 חודשים לפני הכניסה לג'מייקה" },
+      to: { notes: "אחרי השבב, בתוך 12 חודשים לפני הכניסה, לא חיסון תלת-שנתי" }
+    }
+  };
+
+  // fingerprints of the previous (longer) guide texts. A step or details text that still matches its old
+  // fingerprint, and was not completed, is safely swapped for the shorter current text (see applyGuide).
+  var LEGACY = {"jam-1":{"d":"1tjcrr8","s":["1lhnjas","1rntzt0","1pjjmhl","1n5fef9","plyexo"]},"jam-2":{"d":"qeipq2","s":["tz1nxk","pxyhpv","lu0w9n","xuaoa4","zat79v","1nj0v95","ziuvco","393fp0","89b3or","1nxrbh4"]},"jam-3":{"d":"tgx8is","s":["10khddl","ewftjv","fodn1u","1c3imnc","1jvmwo5","1q49xhi","1f9cn92","17owoc2","1d9ixkl","mr87ot","b3oa7n"]},"jam-4":{"d":"5d3xj8","s":["1kpc8yj","or637v","1b5fahs","7m8p64","spb1k2"]},"jam-5":{"d":"7s1w8n","s":["ts3ym3","hab02l","mcpc7a","63ir2w","qqdwd7","1r08300","ezbh3o","jkkyux","1puhgzm"]},"jam-6":{"d":"1wwfbqu","s":["1q4v2mw","4s8rf4","qu9u46","1dhthhv","1cbnkwn"]},"jam-7":{"d":"1pmrukl","s":["1addoxo","kfaqj7","l6y91b","a4a27o","7cw1p5"]},"jam-8":{"d":"s60pco","s":["wmoad9","p3r1ni","10fkvfy|1vt84a2","1a6zsuk","1p0cchx"]},"jam-9":{"d":"14yss8g","s":["rsgb9b","zm7wsl","zxwnku","1fc5m3s","1k8jcbm","1m8ceov"]},"jam-10":{"d":"123qfcs","s":["1d1vquc","20e70a","usnn6h","1ry9szw","16bz49l","hz101c"]},"jam-11":{"d":"i4tidr","s":["sxohwq","jys14n","13nsyf6","x6zxxk","10ehlci"]},"jam-12":{"d":"kdq7jr","s":["656bkf","kvrk54","1b1gyce","7vlwc2","1nn2fuv","13qipwf"]},"jam-13":{"d":"1h8xn4w","s":["1ma2v8v","sh4mce","1fz7qqj","1c5cilc","1snjh1t"]},"jam-14":{"d":"1eqmwgo","s":["1ndegz","oq1866","1kpnl5i","1ktimgr","1y0cuz9","14nje3i"]},"mus-1":{"d":"el6zdu","s":["n7gdyf","b9gkj","d508mn","1vxtt7z","twk4q0","1372ecs","qdvpp9","9vvaim"]},"mus-2":{"d":"1you5kv","s":["1emer3u","dgtl1","16ug7rl","esvp3p","ya78ht","197i60n"]},"mus-3":{"d":"1yqzwj5","s":["kplkx5","1o1s07q","nkd2ob","1j8fk5h","1nxfsy1"]},"mus-4":{"d":"wo64zx","s":["1b57e2h","o4ep7z","1q53gte","18jlabi","somsm5"]},"mus-5":{"d":"1y3ni72","s":["1xvqb35","1z0f0sk","1q22obz","1085ccr","p0rvom","11ihqrp","dg0d8c","gq4d66"]},"mus-6":{"d":"1m2ll81","s":["1q2jlh","ytpw69","1enugzg","1niqgk1","19fxl1t","skeedh"]},"mus-7":{"d":"j5byoi","s":["1s1edek","1qjjiu7","1czho3h","ueqx2t","rpzx0f","1fgorbx"]},"mus-8":{"d":"1r6e1bi","s":["1s0btl2","j9gltt","8zie0m","1kulyoa","qss0wb","1n15a6","ls12n5"]},"mus-9":{"d":"bqvzs1","s":["q8gu3y","1lg72t6","ydhu3z","jt3eae","p4j35","1a1j4mh","j80qir"]}};
+
+
+  var SEED_IDS = {};
+  SEED_TASKS.forEach(function (t) { SEED_IDS[t.id] = true; });
+
+  var STATE_VERSION = 2;
+  var BACKUP_KEY = "eyalOS.backup.preV2";
+  var TOMB_TTL = 120 * 86400000;
+
+  var state = null;
+
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  function stableStringify(v) {
+    if (v === null || typeof v !== "object") return JSON.stringify(v);
+    if (Array.isArray(v)) return "[" + v.map(stableStringify).join(",") + "]";
+    return "{" + Object.keys(v).sort().map(function (k) { return JSON.stringify(k) + ":" + stableStringify(v[k]); }).join(",") + "}";
+  }
+  // fingerprint of the user-visible data; ignores the wall-clock _updatedAt so a no-op merge stays a no-op
+  function sortedById(list) {
+    return list.slice().sort(function (a, b) { return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; });
+  }
+  function canon(s) {
+    return stableStringify({
+      tasks: sortedById(s.tasks), notes: sortedById(s.notes || []),
+      settings: s.settings, settingsAt: s.settingsAt, tombstones: s.tombstones
+    });
+  }
+  // what is allowed to leave the device: everything except notes marked private
+  function publicView(s) {
+    return {
+      schemaVersion: s.schemaVersion, settings: s.settings, settingsAt: s.settingsAt, tombstones: s.tombstones,
+      tasks: s.tasks, notes: (s.notes || []).filter(function (n) { return !n.private; }), _updatedAt: s._updatedAt
+    };
+  }
+
+  function applySeedPatch(t) {
+    var p = SEED_PATCHES[t.id];
+    if (!p) return;
+    var same = Object.keys(p.from).every(function (k) { return t[k] === p.from[k]; });
+    if (same) Object.keys(p.to).forEach(function (k) { t[k] = p.to[k]; });
+  }
+
+  function hashStr(str) {
+    var x = 5381;
+    for (var i = 0; i < str.length; i++) x = ((x << 5) + x + str.charCodeAt(i)) | 0;
+    return (x >>> 0).toString(36);
+  }
+  function isLegacy(h, spec) { return ('|' + spec + '|').indexOf('|' + h + '|') !== -1; }
+  function findItem(t, id) {
+    for (var i = 0; i < t.checklist.length; i++) if (t.checklist[i].id === id) return i;
+    return -1;
+  }
+
+  // Seeds a task's details/checklist from GUIDES exactly once per item: ids already in guideSeen are never
+  // re-added, so anything the user edited or deleted stays that way. New steps must only be APPENDED to a guide.
+  // Text that still matches an OLD guide version (LEGACY fingerprint) and was not completed is refreshed to the
+  // current wording; anything the user changed, ticked or wrote themselves is left alone.
+  function applyGuide(t) {
+    var g = GUIDES[t.id];
+    if (!g) return;
+    var seen = t.guideSeen, lg = LEGACY[t.id];
+    if (g.details) {
+      if (seen.indexOf("d") === -1) {
+        if (!t.details) t.details = g.details;
+        seen.push("d");
+      } else if (lg && t.details && isLegacy(hashStr(t.details), lg.d)) {
+        t.details = g.details;
+      }
+    }
+    var steps = g.steps || [];
+    steps.forEach(function (st, i) {
+      var sid = "s" + (i + 1);
+      if (seen.indexOf(sid) === -1) {
+        seen.push(sid);
+        var item = { id: t.id + "." + sid, text: st.t, done: false };
+        if (st.url) item.url = st.url;
+        t.checklist.push(item);
+        return;
+      }
+      if (lg && lg.s[i]) {
+        var k = findItem(t, t.id + "." + sid);
+        if (k >= 0 && !t.checklist[k].done && isLegacy(hashStr(t.checklist[k].text), lg.s[i])) {
+          t.checklist[k].text = st.t;
+          if (st.url) t.checklist[k].url = st.url; else delete t.checklist[k].url;
+        }
+      }
+    });
+    if (lg) {
+      for (var j = steps.length; j < lg.s.length; j++) {
+        var k2 = findItem(t, t.id + ".s" + (j + 1));
+        if (k2 >= 0 && !t.checklist[k2].done && isLegacy(hashStr(t.checklist[k2].text), lg.s[j])) t.checklist.splice(k2, 1);
+      }
+    }
+  }
+
+  // Idempotent. Brings any saved/remote state up to the current schema without touching user data.
+  function migrateState(s) {
+    if (!s || typeof s !== "object" || !Array.isArray(s.tasks)) return null;
+    s.settings = Object.assign({}, DEFAULT_SETTINGS, s.settings || {});
+    if (!s.tombstones || typeof s.tombstones !== "object" || Array.isArray(s.tombstones)) s.tombstones = {};
+    var base = typeof s._updatedAt === "number" ? s._updatedAt : 0;
+    if (typeof s.settingsAt !== "number") s.settingsAt = base;
+    s.schemaVersion = STATE_VERSION;
+
+    // additive: bring in seed tasks the user doesn't have yet, unless they deliberately deleted them
+    var have = {};
+    s.tasks.forEach(function (t) { have[t.id] = true; });
+    SEED_TASKS.forEach(function (st) {
+      if (!have[st.id] && !s.tombstones[st.id]) s.tasks.push(clone(st));
+    });
+
+    if (!Array.isArray(s.notes)) s.notes = [];
+    s.notes = s.notes.filter(function (n) { return n && typeof n.id === "string"; });
+    s.notes.forEach(function (n) {
+      if (typeof n.text !== "string") n.text = "";
+      if (!NOTE_KIND_KEYS[n.kind]) n.kind = "thought";
+      if (!NOTE_COLOR_KEYS[n.color]) n.color = NOTE_KIND_KEYS[n.kind].color;
+      if (typeof n.mood !== "string") n.mood = "";
+      if (typeof n.pinned !== "boolean") n.pinned = false;
+      if (typeof n.private !== "boolean") n.private = false; // notes that arrive from the cloud were shared
+      if (typeof n.updatedAt !== "number") n.updatedAt = base;
+      if (typeof n.createdAt !== "string") n.createdAt = new Date(n.updatedAt || 0).toISOString();
+    });
+
+    s.tasks.forEach(function (t) {
+      // recurring tasks saved before streak-tracking: seed one entry from the last completion
+      if (t.recur && !Array.isArray(t.doneLog)) {
+        t.doneLog = t.lastDoneAt ? [periodKeyFor(t.recur, t.lastDoneAt.slice(0, 10))] : [];
+      }
+      if (typeof t.details !== "string") t.details = "";
+      if (!Array.isArray(t.checklist)) t.checklist = [];
+      if (!Array.isArray(t.guideSeen)) t.guideSeen = [];
+      if (typeof t.updatedAt !== "number") t.updatedAt = base;
+      applySeedPatch(t);
+      applyGuide(t);
+    });
+
+    var now = Date.now();
+    Object.keys(s.tombstones).forEach(function (k) {
+      if (!SEED_IDS[k] && now - s.tombstones[k] > TOMB_TTL) delete s.tombstones[k];
+    });
+    return s;
+  }
+
+  function pickNewer(l, r) {
+    if (l.updatedAt !== r.updatedAt) return l.updatedAt > r.updatedAt ? l : r;
+    return stableStringify(l) >= stableStringify(r) ? l : r; // deterministic tie-break so devices converge
+  }
+
+  // Per-item merge of two migrated states: newest edit of each task wins, a deletion beats any older edit.
+  function mergeStates(local, remote) {
+    var tomb = {};
+    [remote.tombstones, local.tombstones].forEach(function (m) {
+      Object.keys(m).forEach(function (k) { tomb[k] = Math.max(tomb[k] || 0, m[k]); });
+    });
+    var rById = {};
+    remote.tasks.forEach(function (t) { rById[t.id] = t; });
+    var out = [], seen = {};
+    local.tasks.forEach(function (l) {
+      seen[l.id] = true;
+      out.push(rById[l.id] ? pickNewer(l, rById[l.id]) : l);
+    });
+    remote.tasks.forEach(function (r) { if (!seen[r.id]) out.push(r); });
+    out = out.filter(function (t) { return !(tomb[t.id] && tomb[t.id] >= t.updatedAt); });
+
+    // notes: private ones only ever exist locally (kept as-is); shared ones merge per item like tasks
+    var rNotes = remote.notes.filter(function (n) { return !n.private; });
+    var rNoteById = {};
+    rNotes.forEach(function (n) { rNoteById[n.id] = n; });
+    var nOut = [], nSeen = {};
+    local.notes.forEach(function (l) {
+      nSeen[l.id] = true;
+      nOut.push(l.private ? l : (rNoteById[l.id] ? pickNewer(l, rNoteById[l.id]) : l));
+    });
+    rNotes.forEach(function (r) { if (!nSeen[r.id]) nOut.push(r); });
+    nOut = nOut.filter(function (n) { return n.private || !(tomb[n.id] && tomb[n.id] >= n.updatedAt); });
+
+    var sWin;
+    if (remote.settingsAt !== local.settingsAt) sWin = remote.settingsAt > local.settingsAt ? remote : local;
+    else sWin = stableStringify(local.settings) >= stableStringify(remote.settings) ? local : remote;
+
+    return migrateState({
+      schemaVersion: STATE_VERSION,
+      settings: Object.assign({}, sWin.settings),
+      settingsAt: Math.max(local.settingsAt, remote.settingsAt),
+      tombstones: tomb,
+      tasks: out,
+      notes: nOut,
+      _updatedAt: Math.max(local._updatedAt || 0, remote._updatedAt || 0)
+    });
+  }
+
+  function defaultState() {
+    return migrateState({ schemaVersion: STATE_VERSION, settings: {}, settingsAt: 0, tombstones: {}, tasks: [], notes: [], _updatedAt: 0 });
+  }
+
+  function loadState() {
+    var raw = null;
+    try {
+      raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
+      var parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.tasks)) return defaultState();
+      // one-time safety net: keep a copy of the pre-2.0 data so an upgrade can always be rolled back
+      if (parsed.schemaVersion !== STATE_VERSION) {
+        try { if (!localStorage.getItem(BACKUP_KEY)) localStorage.setItem(BACKUP_KEY, raw); } catch (e) {}
+      }
+      return migrateState(parsed);
+    } catch (e) {
+      try { if (raw) localStorage.setItem("eyalOS.corrupt", raw); } catch (e2) {}
+      return defaultState();
+    }
+  }
+
+  function saveLocalOnly() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { showStorageWarning(); }
+  }
+
+  function saveState() {
+    state._updatedAt = Date.now();
+    saveLocalOnly();
+    cloudPush();
+  }
+
+  // for keystroke-level edits: persist locally right away, push to the cloud a little later
+  function persistSoft() {
+    state._updatedAt = Date.now();
+    saveLocalOnly();
+    scheduleCloudSync(1500);
+  }
+
+  function showStorageWarning() {
+    if (document.getElementById("storageWarning")) return;
+    var b = document.createElement("div");
+    b.id = "storageWarning";
+    b.setAttribute("dir", "rtl");
+    b.className = "tip-banner";
+    b.style.borderColor = "var(--warn)";
+    b.style.color = "var(--warn)";
+    b.textContent = "הדפדפן חוסם שמירת מידע (למשל מצב גלישה פרטית) — השינויים לא יישמרו אחרי סגירת הדף. פתחו את הדף במצב גלישה רגיל.";
+    document.body.appendChild(b);
+  }
+
+  function el(tag, cls, attrs) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (attrs) for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function bidiRender(container, text) {
+    container.textContent = "";
+    if (!text) return;
+    var re = /([A-Za-z0-9][A-Za-z0-9\/.\-: ]*[A-Za-z0-9]|[A-Za-z0-9])/g;
+    var lastIndex = 0, m;
+    while ((m = re.exec(text))) {
+      if (m.index > lastIndex) container.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
+      var b = el("bdi");
+      b.textContent = m[0];
+      container.appendChild(b);
+      lastIndex = m.index + m[0].length;
+    }
+    if (lastIndex < text.length) container.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+
+  function domainOf(key) { return DOMAINS.filter(function (d) { return d.key === key; })[0]; }
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function dateToISO(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function todayISO() { return dateToISO(new Date()); }
+  function fmtDateHe(iso) { if (!iso) return "—"; var p = iso.split("-"); return p[2] + "." + p[1] + "." + p[0]; }
+  function daysBetween(a, b) {
+    var A = new Date(a + "T00:00:00"), B = new Date(b + "T00:00:00");
+    return Math.round((B - A) / 86400000);
+  }
+  var WEEKDAY_NAMES = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+
+  /* ---------------- recurring habits ---------------- */
+  function weekStartISOFor(iso) {
+    var d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() - d.getDay());
+    return dateToISO(d);
+  }
+  // Recurring tasks (routine habits) don't use done/completedAt — they use lastDoneAt,
+  // and "done" is computed relative to the current day/week so they auto-reset each period.
+  function isDone(t, todayS) {
+    if (!t.recur) return t.done;
+    if (!t.lastDoneAt) return false;
+    var lastDate = t.lastDoneAt.slice(0, 10);
+    if (t.recur === "daily") return lastDate === todayS;
+    return weekStartISOFor(lastDate) === weekStartISOFor(todayS);
+  }
+  function periodKeyFor(recur, dateISO) {
+    return recur === "weekly" ? weekStartISOFor(dateISO) : dateISO;
+  }
+  function shiftPeriod(key, deltaPeriods, recur) {
+    var d = new Date(key + "T00:00:00");
+    d.setDate(d.getDate() + deltaPeriods * (recur === "weekly" ? 7 : 1));
+    return dateToISO(d);
+  }
+  // Current consecutive streak of completed periods (days for daily habits, weeks for weekly),
+  // counting back from today (or from yesterday/last week if today's period isn't done yet,
+  // so the streak doesn't visually break mid-period).
+  function computeStreak(t, todayS) {
+    if (!t.recur || !t.doneLog || !t.doneLog.length) return 0;
+    var set = {};
+    t.doneLog.forEach(function (k) { set[k] = true; });
+    var todayKey = periodKeyFor(t.recur, todayS);
+    var cursor = set[todayKey] ? todayKey : shiftPeriod(todayKey, -1, t.recur);
+    var streak = 0;
+    while (set[cursor]) { streak++; cursor = shiftPeriod(cursor, -1, t.recur); }
+    return streak;
+  }
+
+  /* ---------------- scoring: priority + urgency ---------------- */
+  function urgencyBucket(t, todayS) {
+    if (t.recur === "daily") return 1;
+    if (t.recur === "weekly") return 2;
+    if (!t.dueDate) return 4;
+    var diff = daysBetween(todayS, t.dueDate);
+    if (diff < 0) return 0;
+    if (diff === 0) return 1;
+    if (diff <= 6) return 2;
+    return 3;
+  }
+  function taskScore(t, todayS) {
+    return [urgencyBucket(t, todayS), t.priority, t.dueTime || "99:99", t.dueDate || "9999-99-99", t.createdAt];
+  }
+  function cmpScore(a, b) {
+    for (var i = 0; i < a.length; i++) { if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1; }
+    return 0;
+  }
+  function sortByScore(list, todayS) {
+    return list.slice().sort(function (a, b) { return cmpScore(taskScore(a, todayS), taskScore(b, todayS)); });
+  }
+
+  function duePill(t, todayS) {
+    if (t.recur) {
+      var rp = el("span", "recur-pill");
+      rp.textContent = t.recur === "daily" ? "כל יום" : "פעם בשבוע";
+      return rp;
+    }
+    if (!t.dueDate) return null;
+    var bucket = urgencyBucket(t, todayS);
+    var span = el("span", "due-pill " + (bucket === 0 ? "overdue" : bucket === 1 ? "today" : bucket === 2 ? "soon" : "later"));
+    var timeStr = t.dueTime ? " " + t.dueTime : "";
+    if (bucket === 0) span.textContent = "באיחור";
+    else if (bucket === 1) span.textContent = "היום" + timeStr;
+    else span.textContent = fmtDateHe(t.dueDate) + timeStr;
+    return span;
+  }
+  function streakBadge(t, todayS) {
+    if (!t.recur) return null;
+    var streak = computeStreak(t, todayS);
+    if (!streak) return null;
+    var b = el("span", "streak-pill");
+    b.textContent = "🔥 " + streak;
+    b.title = t.recur === "daily" ? (streak + " ימים ברצף") : (streak + " שבועות ברצף");
+    return b;
+  }
+
+  /* ---------------- hero ---------------- */
+  function renderHero() {
+    document.getElementById("friendNameHeading").textContent = state.settings.friendName || "אייל";
+    document.getElementById("moveDateLabel").textContent = fmtDateHe(state.settings.moveDate);
+    document.getElementById("todayLabel").textContent = fmtDateHe(todayISO());
+    var d = daysBetween(todayISO(), state.settings.moveDate);
+    document.getElementById("daysLeft").textContent = d >= 0 ? d : 0;
+  }
+
+  /* ---------------- today list ---------------- */
+  function buildCheck(t, todayS) {
+    var done = isDone(t, todayS);
+    var btn = el("button", "check" + (done ? " done" : ""), { "aria-label": "סמן כבוצע" });
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+    btn.addEventListener("click", function () { toggleTask(t.id); });
+    return btn;
+  }
+
+  function renderToday() {
+    var list = document.getElementById("todayList");
+    list.textContent = "";
+    var todayS = todayISO();
+    var byDomain = DOMAINS.map(function (d) {
+      return sortByScore(state.tasks.filter(function (t) { return !isDone(t, todayS) && t.domain === d.key; }), todayS);
+    });
+    var top = [], round = 0;
+    while (top.length < 7) {
+      var added = false;
+      for (var i = 0; i < byDomain.length; i++) {
+        if (byDomain[i][round]) { top.push(byDomain[i][round]); added = true; if (top.length >= 7) break; }
+      }
+      if (!added) break;
+      round++;
+    }
+    if (!top.length) {
+      var empty = el("li", "today-empty"); empty.textContent = "הכל סגור להיום. כל הכבוד.";
+      list.appendChild(empty); return;
+    }
+    top.forEach(function (t) {
+      var d = domainOf(t.domain);
+      var li = el("li", "today-item");
+      var check = buildCheck(t, todayS);
+      var chip = el("span", "chip"); chip.style.background = d.color; chip.textContent = d.name;
+      var body = el("div", "today-item-body");
+      var topRow = el("div", "today-item-top");
+      var title = el("span", "today-item-title"); bidiRender(title, t.title);
+      topRow.appendChild(title);
+      var pill = duePill(t, todayS); if (pill) topRow.appendChild(pill);
+      var streak = streakBadge(t, todayS); if (streak) topRow.appendChild(streak);
+      var det = buildDetails(t, "today", d.color);
+      topRow.appendChild(det.button);
+      body.appendChild(topRow);
+      if (t.notes) { var notes = el("div", "today-item-notes"); bidiRender(notes, t.notes); body.appendChild(notes); }
+      li.appendChild(check); li.appendChild(chip); li.appendChild(body);
+      li.appendChild(det.panel);
+      list.appendChild(li);
+    });
+  }
+
+  /* ---------------- weekly journal ---------------- */
+  var weekOffset = 0;
+
+  function weekStart(offset) {
+    var d = new Date();
+    d.setHours(0,0,0,0);
+    d.setDate(d.getDate() - d.getDay() + offset * 7);
+    return d;
+  }
+
+  function renderWeekly() {
+    var start = weekStart(weekOffset);
+    var end = new Date(start); end.setDate(end.getDate() + 6);
+    document.getElementById("weekLabel").textContent = weekOffset === 0
+      ? "השבוע הזה"
+      : (pad2(start.getDate()) + "." + pad2(start.getMonth() + 1) + " – " + pad2(end.getDate()) + "." + pad2(end.getMonth() + 1));
+
+    var grid = document.getElementById("weeklyGrid");
+    grid.textContent = "";
+    var todayS = todayISO();
+
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(start); d.setDate(d.getDate() + i);
+      var iso = dateToISO(d);
+      var card = el("div", "day-card" + (iso === todayS ? " is-today" : ""));
+      var head = el("div", "day-head");
+      var name = el("span", "day-name"); name.textContent = WEEKDAY_NAMES[d.getDay()];
+      var dateEl = el("span", "day-date"); dateEl.textContent = pad2(d.getDate()) + "." + pad2(d.getMonth() + 1);
+      head.appendChild(name); head.appendChild(dateEl);
+      card.appendChild(head);
+
+      var dayTasks = sortByScore(state.tasks.filter(function (t) { return t.dueDate === iso; }), todayS);
+      var tasksList = el("ul", "day-tasks");
+      if (!dayTasks.length) {
+        var emptyP = el("p", "day-empty"); emptyP.textContent = "אין משימות";
+        tasksList.appendChild(emptyP);
+      } else {
+        dayTasks.forEach(function (t) {
+          var dm = domainOf(t.domain);
+          var row = el("li", "day-task");
+          var time = el("span", "day-task-time mono"); time.textContent = t.dueTime || "—";
+          var titleEl = el("span", "day-task-title" + (t.done ? " done" : ""));
+          titleEl.style.borderInlineStart = "2.5px solid " + dm.color;
+          titleEl.style.paddingInlineStart = "5px";
+          bidiRender(titleEl, t.title);
+          var x = el("button", "day-task-x", { "aria-label": "בטל שיבוץ" }); x.textContent = "✕";
+          x.addEventListener("click", function (tid) { return function () { updateTask(tid, { dueDate: null, dueTime: null }); }; }(t.id));
+          row.appendChild(time); row.appendChild(titleEl); row.appendChild(x);
+          tasksList.appendChild(row);
+        });
+      }
+      card.appendChild(tasksList);
+
+      var addBtn = el("button", "day-add-btn"); addBtn.textContent = "+ הוסף למשימה ליום זה";
+      var form = buildDayAddForm(iso);
+      addBtn.addEventListener("click", function (f) { return function () { f.classList.toggle("open"); if (f.classList.contains("open")) f.querySelector("input").focus(); }; }(form));
+      card.appendChild(addBtn);
+      card.appendChild(form);
+
+      grid.appendChild(card);
+    }
+  }
+
+  function buildDayAddForm(iso) {
+    var form = el("div", "inline-form");
+    var titleInput = el("input", "", { type: "text", placeholder: "משימה חדשה…", maxlength: "140" });
+    var row = el("div", "inline-row");
+    var domainSelect = el("select");
+    DOMAINS.forEach(function (d) { var o = el("option"); o.value = d.key; o.textContent = d.name; domainSelect.appendChild(o); });
+    var timeInput = el("input", "", { type: "time" });
+    row.appendChild(domainSelect); row.appendChild(timeInput);
+    var actions = el("div", "inline-actions");
+    var cancel = el("button", "btn btn-ghost btn-sm"); cancel.textContent = "ביטול";
+    var save = el("button", "btn btn-primary btn-sm"); save.textContent = "הוסף";
+    cancel.addEventListener("click", function () { form.classList.remove("open"); titleInput.value = ""; });
+    save.addEventListener("click", function () {
+      var val = titleInput.value.trim();
+      if (!val) { titleInput.focus(); return; }
+      addTask(domainSelect.value, val, iso, timeInput.value || null, 2);
+      titleInput.value = ""; timeInput.value = "";
+      form.classList.remove("open");
+    });
+    titleInput.addEventListener("keydown", function (e) { if (e.key === "Enter") save.click(); });
+    actions.appendChild(cancel); actions.appendChild(save);
+    form.appendChild(titleInput); form.appendChild(row); form.appendChild(actions);
+    return form;
+  }
+
+  /* ---------------- domain cards ---------------- */
+  function renderDomains() {
+    var grid = document.getElementById("domainsGrid");
+    grid.textContent = "";
+    var todayS = todayISO();
+    DOMAINS.forEach(function (d) {
+      var tasks = state.tasks.filter(function (t) { return t.domain === d.key; });
+      var open = sortByScore(tasks.filter(function (t) { return !isDone(t, todayS); }), todayS);
+      var done = tasks.filter(function (t) { return isDone(t, todayS); });
+      var pct = tasks.length ? Math.round((done.length / tasks.length) * 100) : 0;
+
+      var card = el("div", "domain-card");
+      card.style.setProperty("--d-color", d.color);
+
+      var head = el("div", "domain-head");
+      var icon = el("div", "domain-icon"); icon.innerHTML = d.icon;
+      var name = el("div", "domain-name"); name.textContent = d.name;
+      var pctEl = el("div", "domain-pct"); pctEl.textContent = pct + "%";
+      head.appendChild(icon); head.appendChild(name); head.appendChild(pctEl);
+
+      var track = el("div", "progress-track");
+      var fill = el("div", "progress-fill"); fill.style.width = pct + "%";
+      track.appendChild(fill);
+
+      var openList = el("ul", "task-list");
+      open.forEach(function (t) { openList.appendChild(buildTaskRow(t, todayS)); });
+
+      card.appendChild(head); card.appendChild(track); card.appendChild(openList);
+
+      if (done.length) {
+        var toggle = el("button", "domain-toggle");
+        toggle.textContent = "הצג " + done.length + " שהושלמו";
+        var completedList = el("ul", "task-list completed-list");
+        done.forEach(function (t) { completedList.appendChild(buildTaskRow(t, todayS)); });
+        toggle.addEventListener("click", function () {
+          completedList.classList.toggle("open");
+          toggle.textContent = completedList.classList.contains("open") ? "הסתר שהושלמו" : "הצג " + done.length + " שהושלמו";
+        });
+        card.appendChild(toggle); card.appendChild(completedList);
+      }
+
+      var addTrigger = el("button", "add-trigger"); addTrigger.textContent = "+ הוסף משימה";
+      var addForm = buildDomainAddForm(d);
+      addTrigger.addEventListener("click", function () {
+        addForm.classList.toggle("open");
+        if (addForm.classList.contains("open")) addForm.querySelector("input").focus();
+      });
+      card.appendChild(addTrigger); card.appendChild(addForm);
+
+      grid.appendChild(card);
+    });
+  }
+
+  function buildTaskRow(t, todayS) {
+    var row = el("li", "task-row");
+    var check = buildCheck(t, todayS);
+    var body = el("div", "task-body");
+    var topRow = el("div", "task-top");
+    var title = el("span", "task-title" + (isDone(t, todayS) ? " done" : "")); bidiRender(title, t.title);
+    topRow.appendChild(title);
+    var pill = duePill(t, todayS); if (pill) topRow.appendChild(pill);
+    var streak = streakBadge(t, todayS); if (streak) topRow.appendChild(streak);
+    var det = buildDetails(t, "card", domainOf(t.domain).color);
+    topRow.appendChild(det.button);
+    body.appendChild(topRow);
+    if (t.notes) { var notes = el("div", "task-notes"); bidiRender(notes, t.notes); body.appendChild(notes); }
+
+    var actions = el("div", "task-actions");
+    if (!t.recur) {
+      var schedForm = buildScheduleForm(t);
+      body.appendChild(schedForm);
+      var schedBtn = el("button", "task-mini-btn"); schedBtn.textContent = "תזמון";
+      schedBtn.addEventListener("click", function () { schedForm.classList.toggle("open"); });
+      actions.appendChild(schedBtn);
+    }
+    var del = el("button", "task-mini-btn del"); del.textContent = "מחק";
+    del.addEventListener("click", function () {
+      if (del.classList.contains("confirm")) { deleteTask(t.id); }
+      else {
+        del.classList.add("confirm"); del.textContent = "לאשר?";
+        setTimeout(function () { del.classList.remove("confirm"); del.textContent = "מחק"; }, 3000);
+      }
+    });
+    actions.appendChild(del);
+
+    row.appendChild(check); row.appendChild(body); row.appendChild(actions);
+    row.appendChild(det.panel);
+    return row;
+  }
+
+  function buildScheduleForm(t) {
+    var form = el("div", "inline-form");
+    var row = el("div", "inline-row");
+    var dateInput = el("input", "", { type: "date" }); dateInput.value = t.dueDate || "";
+    var timeInput = el("input", "", { type: "time" }); timeInput.value = t.dueTime || "";
+    row.appendChild(dateInput); row.appendChild(timeInput);
+    var actions = el("div", "inline-actions");
+    var clear = el("button", "btn btn-ghost btn-sm"); clear.textContent = "נקה שיבוץ";
+    var save = el("button", "btn btn-primary btn-sm"); save.textContent = "שמור";
+    clear.addEventListener("click", function () { updateTask(t.id, { dueDate: null, dueTime: null }); form.classList.remove("open"); });
+    save.addEventListener("click", function () {
+      updateTask(t.id, { dueDate: dateInput.value || null, dueTime: timeInput.value || null });
+      form.classList.remove("open");
+    });
+    actions.appendChild(clear); actions.appendChild(save);
+    form.appendChild(row); form.appendChild(actions);
+    return form;
+  }
+
+  function buildDomainAddForm(d) {
+    var form = el("div", "inline-form");
+    var titleInput = el("input", "", { type: "text", placeholder: "משימה חדשה ב" + d.name + "…", maxlength: "140" });
+    var row2 = el("div", "inline-row");
+    var dateInput = el("input", "", { type: "date" });
+    var timeInput = el("input", "", { type: "time" });
+    var prioSelect = el("select");
+    [["1", "דחוף"], ["2", "רגיל"], ["3", "בהמשך"]].forEach(function (p) {
+      var opt = el("option"); opt.value = p[0]; opt.textContent = p[1]; if (p[0] === "2") opt.selected = true;
+      prioSelect.appendChild(opt);
+    });
+    row2.appendChild(dateInput); row2.appendChild(timeInput); row2.appendChild(prioSelect);
+    var row3 = el("div", "inline-row");
+    var recurSelect = el("select");
+    [["", "חד פעמי"], ["daily", "חוזר כל יום"], ["weekly", "חוזר פעם בשבוע"]].forEach(function (p) {
+      var opt = el("option"); opt.value = p[0]; opt.textContent = p[1]; recurSelect.appendChild(opt);
+    });
+    row3.appendChild(recurSelect);
+    recurSelect.addEventListener("change", function () {
+      var recurring = !!recurSelect.value;
+      dateInput.disabled = recurring; timeInput.disabled = recurring;
+      if (recurring) { dateInput.value = ""; timeInput.value = ""; }
+    });
+    var actions = el("div", "inline-actions");
+    var cancel = el("button", "btn btn-ghost btn-sm"); cancel.textContent = "ביטול";
+    var save = el("button", "btn btn-primary btn-sm"); save.textContent = "הוסף";
+    cancel.addEventListener("click", function () { form.classList.remove("open"); titleInput.value = ""; });
+    save.addEventListener("click", function () {
+      var val = titleInput.value.trim();
+      if (!val) { titleInput.focus(); return; }
+      addTask(d.key, val, dateInput.value || null, timeInput.value || null, Number(prioSelect.value), recurSelect.value || null);
+      titleInput.value = ""; dateInput.value = ""; timeInput.value = ""; prioSelect.value = "2";
+      recurSelect.value = ""; dateInput.disabled = false; timeInput.disabled = false;
+      form.classList.remove("open");
+    });
+    titleInput.addEventListener("keydown", function (e) { if (e.key === "Enter") save.click(); });
+    actions.appendChild(cancel); actions.appendChild(save);
+    form.appendChild(titleInput); form.appendChild(row2); form.appendChild(row3); form.appendChild(actions);
+    return form;
+  }
+
+  /* ---------------- progress ---------------- */
+  function renderProgress() {
+    var overview = document.getElementById("progressOverview");
+    overview.textContent = "";
+    var todayS = todayISO();
+    DOMAINS.forEach(function (d) {
+      var tasks = state.tasks.filter(function (t) { return t.domain === d.key; });
+      var done = tasks.filter(function (t) { return isDone(t, todayS); }).length;
+      var pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+      var card = el("div", "mini-progress");
+      var head = el("div", "mini-progress-head");
+      var left = el("span"); left.textContent = d.name;
+      var right = el("span", "mono"); right.style.color = d.color; right.textContent = pct + "%";
+      head.appendChild(left); head.appendChild(right);
+      var track = el("div", "progress-track");
+      var fill = el("div", "progress-fill"); fill.style.width = pct + "%"; fill.style.background = d.color;
+      track.appendChild(fill);
+      card.appendChild(head); card.appendChild(track);
+      overview.appendChild(card);
+    });
+
+    var routineTasks = state.tasks.filter(function (t) { return t.recur; });
+    if (routineTasks.length) {
+      var totalCheckins = routineTasks.reduce(function (sum, t) { return sum + (t.doneLog ? t.doneLog.length : 0); }, 0);
+      var bestStreak = routineTasks.reduce(function (max, t) { return Math.max(max, computeStreak(t, todayS)); }, 0);
+      var streakCard = el("div", "mini-progress");
+      var sHead = el("div", "mini-progress-head");
+      var sLeft = el("span"); sLeft.textContent = "עקביות בשגרה";
+      var sRight = el("span", "mono"); sRight.style.color = "var(--routine)"; sRight.textContent = "🔥 " + bestStreak;
+      sHead.appendChild(sLeft); sHead.appendChild(sRight);
+      var sNote = el("p", "section-sub"); sNote.style.margin = "2px 0 0"; sNote.style.fontSize = ".76rem";
+      sNote.textContent = totalCheckins + " סימונים בסך הכל, הרצף הכי ארוך כרגע";
+      streakCard.appendChild(sHead); streakCard.appendChild(sNote);
+      overview.appendChild(streakCard);
+    }
+
+    renderWeeklyChart();
+  }
+
+  function isoWeekStartDate(d) {
+    var date = new Date(d); var day = date.getDay();
+    date.setDate(date.getDate() - day); date.setHours(0,0,0,0);
+    return date;
+  }
+
+  function renderWeeklyChart() {
+    var container = document.getElementById("weeklyBars");
+    container.textContent = "";
+    var now = new Date();
+    var weeks = [];
+    for (var i = 7; i >= 0; i--) { var d = new Date(now); d.setDate(d.getDate() - i * 7); weeks.push(isoWeekStartDate(d)); }
+    var counts = weeks.map(function (wStart) {
+      var wEnd = new Date(wStart); wEnd.setDate(wEnd.getDate() + 7);
+      return state.tasks.filter(function (t) {
+        if (!t.completedAt) return false;
+        var c = new Date(t.completedAt);
+        return c >= wStart && c < wEnd;
+      }).length;
+    });
+    var max = Math.max.apply(null, counts.concat([1]));
+    var anyData = counts.some(function (c) { return c > 0; });
+    document.getElementById("weeklyEmptyNote").hidden = anyData;
+    weeks.forEach(function (wStart, idx) {
+      var col = el("div", "weekly-bar-col");
+      var bar = el("div", "weekly-bar");
+      var h = Math.round((counts[idx] / max) * 100);
+      bar.style.height = Math.max(h, counts[idx] > 0 ? 6 : 2) + "%";
+      var label = el("div", "weekly-bar-label"); label.textContent = (wStart.getMonth() + 1) + "/" + wStart.getDate();
+      col.appendChild(bar); col.appendChild(label);
+      container.appendChild(col);
+    });
+  }
+
+  /* ---------------- task details: expandable text + checklist ---------------- */
+  var panelUI = {}; // "ctx:taskId" -> { open, edit } — survives re-renders, which rebuild the whole DOM
+
+  function taskById(id) {
+    for (var i = 0; i < state.tasks.length; i++) if (state.tasks[i].id === id) return state.tasks[i];
+    return null;
+  }
+  function touch(t) { t.updatedAt = Date.now(); }
+  function checklistCount(t) {
+    var list = t.checklist || [];
+    return { total: list.length, done: list.filter(function (x) { return x.done; }).length };
+  }
+  function updateCounters(id) {
+    var t = taskById(id);
+    if (!t) return;
+    var c = checklistCount(t);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-cnt-for="' + id + '"]'), function (n) {
+      n.textContent = c.total ? (c.done + "/" + c.total) : "";
+    });
+  }
+
+  function buildDetails(t, ctx, colorVar) {
+    var key = ctx + ":" + t.id;
+    var ui = panelUI[key] || (panelUI[key] = { open: false, edit: false });
+    var panel = el("div", "detail-panel" + (ui.open ? " open" : ""));
+    panel.style.setProperty("--d-color", colorVar);
+
+    var btn = el("button", "detail-toggle", { type: "button", "aria-expanded": ui.open ? "true" : "false" });
+    btn.style.setProperty("--d-color", colorVar);
+    var label = el("span"); label.textContent = "פרטים";
+    var cnt = el("span", "cnt mono", { "data-cnt-for": t.id });
+    var c = checklistCount(t);
+    cnt.textContent = c.total ? (c.done + "/" + c.total) : "";
+    var chev = el("span", "chev"); chev.textContent = "▾";
+    btn.appendChild(label); btn.appendChild(cnt); btn.appendChild(chev);
+    btn.addEventListener("click", function () {
+      ui.open = !ui.open;
+      btn.setAttribute("aria-expanded", ui.open ? "true" : "false");
+      panel.classList.toggle("open", ui.open);
+      if (ui.open) renderPanel(panel, t.id, ui);
+    });
+    if (ui.open) renderPanel(panel, t.id, ui);
+    return { button: btn, panel: panel };
+  }
+
+  var CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+  function renderPanel(panel, id, ui) {
+    var t = taskById(id);
+    if (!t) return;
+    panel.textContent = "";
+    var c = checklistCount(t);
+
+    // header: progress + edit toggle
+    var head = el("div", "dp-head");
+    var prog = el("div", "dp-progress");
+    if (c.total) {
+      var pl = el("span", "mono"); pl.textContent = c.done + "/" + c.total;
+      var track = el("div", "progress-track");
+      var fill = el("div", "progress-fill"); fill.style.width = Math.round(c.done / c.total * 100) + "%";
+      track.appendChild(fill);
+      prog.appendChild(pl); prog.appendChild(track);
+    }
+    var editBtn = el("button", "btn btn-ghost btn-sm", { type: "button" });
+    editBtn.textContent = ui.edit ? "סיום עריכה" : "עריכה";
+    editBtn.addEventListener("click", function () { ui.edit = !ui.edit; renderPanel(panel, id, ui); });
+    head.appendChild(prog); head.appendChild(editBtn);
+    panel.appendChild(head);
+
+    // free text
+    if (ui.edit) {
+      var ta = el("textarea", "dp-textarea", { dir: "auto", placeholder: "להרחיב במילים: הערות, הסברים, קישורים, מה חשוב לזכור…" });
+      ta.value = t.details || "";
+      ta.addEventListener("input", function () {
+        var cur = taskById(id); if (!cur) return;
+        cur.details = ta.value; touch(cur); persistSoft();
+      });
+      panel.appendChild(ta);
+    } else {
+      var p = el("p", "dp-text" + (t.details ? "" : " empty"));
+      if (t.details) bidiRender(p, t.details); else p.textContent = "אין הרחבה עדיין. אפשר להוסיף דרך עריכה.";
+      panel.appendChild(p);
+    }
+
+    // checklist
+    if (t.checklist.length) {
+      var list = el("ul", "dp-list");
+      t.checklist.forEach(function (item) {
+        var li = el("li", "dp-item");
+        var chk = el("button", "check" + (item.done ? " done" : ""), { type: "button", "aria-label": "סמן כבוצע" });
+        chk.innerHTML = CHECK_SVG;
+        chk.addEventListener("click", function () {
+          var cur = taskById(id); if (!cur) return;
+          var it = cur.checklist.filter(function (x) { return x.id === item.id; })[0];
+          if (!it) return;
+          it.done = !it.done; touch(cur); saveState();
+          renderPanel(panel, id, ui); updateCounters(id);
+        });
+        li.appendChild(chk);
+        if (ui.edit) {
+          var inp = el("input", "dp-input", { type: "text", dir: "auto", maxlength: "300" });
+          inp.value = item.text;
+          inp.addEventListener("input", function () {
+            var cur = taskById(id); if (!cur) return;
+            var it = cur.checklist.filter(function (x) { return x.id === item.id; })[0];
+            if (!it) return;
+            it.text = inp.value; touch(cur); persistSoft();
+          });
+          li.appendChild(inp);
+          var x = el("button", "dp-x", { type: "button", "aria-label": "מחק נקודה" }); x.textContent = "✕";
+          x.addEventListener("click", function () {
+            var cur = taskById(id); if (!cur) return;
+            cur.checklist = cur.checklist.filter(function (y) { return y.id !== item.id; });
+            touch(cur); saveState(); renderPanel(panel, id, ui); updateCounters(id);
+          });
+          li.appendChild(x);
+        } else {
+          var txt = el("span", "dp-item-text" + (item.done ? " done" : ""));
+          bidiRender(txt, item.text);
+          if (item.url && /^https?:\/\//.test(item.url)) {
+            var a = el("a", "dp-link", { href: item.url, target: "_blank", rel: "noopener noreferrer" });
+            a.textContent = "מקור ↗";
+            txt.appendChild(a);
+          }
+          li.appendChild(txt);
+        }
+        list.appendChild(li);
+      });
+      panel.appendChild(list);
+    } else {
+      var empty = el("p", "dp-empty"); empty.textContent = "אין עדיין נקודות. אפשר להוסיף רשימה למטה.";
+      panel.appendChild(empty);
+    }
+
+    // add a bullet
+    var add = el("div", "dp-add");
+    var addInput = el("input", "dp-input", { type: "text", dir: "auto", maxlength: "300", placeholder: "הוסף נקודה לרשימה…" });
+    var addBtn = el("button", "btn btn-sm", { type: "button" }); addBtn.textContent = "הוסף";
+    function doAdd() {
+      var val = addInput.value.trim();
+      if (!val) { addInput.focus(); return; }
+      var cur = taskById(id); if (!cur) return;
+      cur.checklist.push({ id: "c-" + Date.now() + "-" + Math.round(Math.random() * 9999), text: val, done: false });
+      touch(cur); saveState();
+      renderPanel(panel, id, ui); updateCounters(id);
+      var again = panel.querySelector(".dp-add input"); if (again) again.focus();
+    }
+    addBtn.addEventListener("click", doAdd);
+    addInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); doAdd(); } });
+    add.appendChild(addInput); add.appendChild(addBtn);
+    panel.appendChild(add);
+  }
+
+  /* ---------------- render all ---------------- */
+  /* ---------------- thoughts wall ---------------- */
+  var NOTE_KINDS = [
+    { key: "thought", label: "מחשבה", color: "sea" },
+    { key: "feeling", label: "תחושה", color: "rose" },
+    { key: "todo", label: "חשוב לטפל", color: "gold" }
+  ];
+  var NOTE_KIND_KEYS = {};
+  NOTE_KINDS.forEach(function (k) { NOTE_KIND_KEYS[k.key] = k; });
+
+  var NOTE_COLORS = [
+    { key: "sea", name: "ים", css: "var(--sea)" },
+    { key: "rose", name: "ורד", css: "var(--rose)" },
+    { key: "gold", name: "זהב", css: "var(--accent)" },
+    { key: "jungle", name: "ג'ונגל", css: "var(--jungle)" },
+    { key: "sunset", name: "שקיעה", css: "var(--sunset)" },
+    { key: "violet", name: "סגול", css: "var(--violet)" },
+    { key: "slate", name: "אפור", css: "var(--routine)" }
+  ];
+  var NOTE_COLOR_KEYS = {};
+  NOTE_COLORS.forEach(function (c) { NOTE_COLOR_KEYS[c.key] = c; });
+
+  var MOODS = ["רגוע", "שמח", "מתרגש", "אסיר תודה", "לחוץ", "עצוב", "כועס", "מבולבל"];
+  var PROMPTS = [
+    "מה הכי מעסיק אותי עכשיו?",
+    "מה אני מרגיש ולא אמרתי לאף אחד?",
+    "על מה אני גאה השבוע?",
+    "מה אני לא רוצה לשכוח?",
+    "מה הדבר הקטן שיעשה לי טוב היום?",
+    "מה מלהיב אותי בג'מייקה, ומה מפחיד?",
+    "משפט אחד שהייתי רוצה לשמוע עכשיו"
+  ];
+  var DRAFT_KEY = "eyalOS.wallDraft";
+
+  var wallFilter = "all";
+  var wallQuery = "";
+  var sheetCtx = null;
+  var currentView = "home";
+  var toastTimer = null;
+
+  var SVG_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"></path><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z"></path></svg>';
+  var SVG_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"></rect><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"></path></svg>';
+
+  var SVG_KIND = {
+    thought: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18h10a4 4 0 0 0 .6-7.96A5.5 5.5 0 0 0 7.1 8.6 4.7 4.7 0 0 0 7 18z"></path></svg>',
+    feeling: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>',
+    todo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M8.5 12.3l2.5 2.5 4.5-5"></path></svg>'
+  };
+  var MOOD_COLOR = { "רגוע": "var(--jungle)", "שמח": "var(--accent)", "מתרגש": "var(--sunset)", "אסיר תודה": "var(--sea)", "לחוץ": "var(--violet)", "עצוב": "var(--routine)", "כועס": "var(--warn)", "מבולבל": "var(--rose)" };
+  var wallEnter = true;
+  var freshNoteId = null;
+
+  function noteById(id) {
+    for (var i = 0; i < state.notes.length; i++) if (state.notes[i].id === id) return state.notes[i];
+    return null;
+  }
+  function tiltFor(id) {
+    var h = 0;
+    for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+    return (Math.abs(h) % 9 - 4) * 0.22; // -0.88 .. +0.88 degrees, stable per note
+  }
+  function fmtNoteDate(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    var diff = daysBetween(dateToISO(d), todayISO());
+    if (diff === 0) return "היום " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    if (diff === 1) return "אתמול";
+    return pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + (d.getFullYear() !== new Date().getFullYear() ? "." + d.getFullYear() : "");
+  }
+  var promptIdx = null;
+  function currentPrompt() {
+    if (promptIdx === null) {
+      var d = new Date();
+      promptIdx = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000) % PROMPTS.length;
+    }
+    return PROMPTS[promptIdx];
+  }
+  function nextPrompt() { currentPrompt(); promptIdx = (promptIdx + 1) % PROMPTS.length; syncPromptUI(); return PROMPTS[promptIdx]; }
+  function syncPromptUI() {
+    var q = currentPrompt();
+    var h = document.getElementById("composerHint"); if (h) h.textContent = q;
+    var t = document.getElementById("promptText"); if (t) t.textContent = q;
+    if (sheetCtx && sheetCtx.mode === "new") document.getElementById("noteText").placeholder = q;
+  }
+  function usePrompt() {
+    var ta = document.getElementById("noteText"), q = currentPrompt();
+    var v = ta.value;
+    if (v.replace(/\s+/g, "") === "") ta.value = q + "\n";
+    else if (v.indexOf(q) !== 0) ta.value = q + "\n" + v;
+    saveDraft();
+    ta.focus();
+    var len = ta.value.length; try { ta.setSelectionRange(len, len); } catch (e) {}
+  }
+  function showToast(msg) {
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 2600);
+  }
+
+  function noteMatches(n) {
+    if (wallFilter === "pinned" && !n.pinned) return false;
+    if (wallFilter !== "all" && wallFilter !== "pinned" && n.kind !== wallFilter) return false;
+    if (wallQuery && n.text.toLowerCase().indexOf(wallQuery) === -1) return false;
+    return true;
+  }
+
+  function updateFab() {
+    var f = document.getElementById("wallFab");
+    if (f) { f.hidden = !(currentView === "wall" && state && state.notes.length > 0); f.classList.toggle("on", !f.hidden && window.scrollY > 320); }
+  }
+
+  function renderWallHeader(notes) {
+    var stat = document.getElementById("wallStat");
+    stat.textContent = "";
+    if (!notes.length) return;
+    var pinned = notes.filter(function (n) { return n.pinned; }).length;
+    var priv = notes.filter(function (n) { return n.private; }).length;
+    var c = el("span"); c.textContent = notes.length + (notes.length === 1 ? " פתק" : " פתקים"); stat.appendChild(c);
+    if (pinned) { var p = el("span"); p.textContent = pinned + " מוצמדים"; stat.appendChild(p); }
+    if (priv) { var l = el("span", "lock-chip"); l.innerHTML = SVG_LOCK; l.appendChild(document.createTextNode(priv + " רק כאן")); stat.appendChild(l); }
+  }
+
+  function renderMoodWeek(notes) {
+    var box = document.getElementById("moodWeek");
+    box.textContent = "";
+    var since = Date.now() - 7 * 86400000, counts = {}, order = [];
+    notes.forEach(function (n) {
+      if (n.kind !== "feeling" || !n.mood || new Date(n.createdAt).getTime() < since) return;
+      if (!counts[n.mood]) { counts[n.mood] = 0; order.push(n.mood); }
+      counts[n.mood]++;
+    });
+    if (!order.length) return;
+    var lab = el("span"); lab.textContent = "מצב רוח השבוע:"; box.appendChild(lab);
+    order.sort(function (x, y) { return counts[y] - counts[x]; }).forEach(function (m) {
+      var chip = el("span", "mw-chip");
+      chip.style.setProperty("--mc", MOOD_COLOR[m] || "var(--rose)");
+      chip.appendChild(el("span", "dot"));
+      chip.appendChild(document.createTextNode(m + (counts[m] > 1 ? " ×" + counts[m] : "")));
+      box.appendChild(chip);
+    });
+  }
+
+  function renderWall() {
+    var chips = document.getElementById("wallChips");
+    var grid = document.getElementById("wallGrid");
+    var tools = document.getElementById("wallTools");
+    if (!chips || !grid) return;
+    chips.textContent = ""; grid.textContent = "";
+
+    var notes = state.notes;
+    tools.hidden = notes.length === 0;
+    renderWallHeader(notes);
+    updateFab();
+    if (!notes.length) {
+      document.getElementById("moodWeek").textContent = "";
+      var empty = el("div", "wall-empty");
+      empty.innerHTML = '<svg viewBox="0 0 150 100" aria-hidden="true"><g transform="rotate(-8 40 55)"><rect x="14" y="26" width="52" height="56" rx="5" fill="var(--sea)" opacity=".22" stroke="var(--sea)" stroke-width="1.5"></rect><path d="M24 42h32M24 52h24M24 62h28" stroke="var(--sea)" stroke-width="2.4" stroke-linecap="round"></path></g><g transform="rotate(5 78 50)"><rect x="52" y="14" width="52" height="58" rx="5" fill="var(--rose)" opacity=".22" stroke="var(--rose)" stroke-width="1.5"></rect><path d="M62 32h32M62 42h22" stroke="var(--rose)" stroke-width="2.4" stroke-linecap="round"></path><rect x="66" y="8" width="24" height="9" rx="2" fill="var(--rose)" opacity=".5"></rect></g><g transform="rotate(10 118 62)"><rect x="92" y="34" width="46" height="52" rx="5" fill="var(--accent)" opacity=".3" stroke="var(--accent)" stroke-width="1.5"></rect><path d="M101 52h28M101 62h18" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"></path></g></svg>';
+      var h = el("h3"); h.textContent = "הקיר עוד ריק";
+      var p = el("p"); p.textContent = "זה המקום לזרוק אליו מחשבות, תחושות ודברים שחשוב לטפל בהם, לפני שהם מתערבבים בראש. אפשר להתחיל מאחת השאלות:";
+      empty.appendChild(h); empty.appendChild(p);
+      var list = el("div", "prompt-list");
+      [PROMPTS[0], PROMPTS[1], PROMPTS[3], currentPrompt()].filter(function (x, i, a) { return a.indexOf(x) === i; }).forEach(function (q) {
+        var b = el("button", "prompt-btn", { type: "button" }); b.textContent = q;
+        b.addEventListener("click", function () { openSheet("new", null, { text: q + "\n" }); });
+        list.appendChild(b);
+      });
+      empty.appendChild(list);
+      grid.style.columnCount = "1";
+      grid.appendChild(empty);
+      return;
+    }
+    grid.style.columnCount = "";
+    renderMoodWeek(notes);
+
+    var counts = { all: notes.length, pinned: 0 };
+    NOTE_KINDS.forEach(function (k) { counts[k.key] = 0; });
+    notes.forEach(function (n) { counts[n.kind]++; if (n.pinned) counts.pinned++; });
+    var defs = [["all", "הכול"], ["thought", "מחשבות"], ["feeling", "תחושות"], ["todo", "חשוב לטפל"], ["pinned", "מוצמדים"]];
+    defs.forEach(function (d) {
+      if (d[0] !== "all" && d[0] !== wallFilter && !counts[d[0]]) return;
+      var b = el("button", "fchip", { type: "button", "aria-pressed": wallFilter === d[0] ? "true" : "false" });
+      b.appendChild(document.createTextNode(d[1]));
+      var n = el("span", "n"); n.textContent = counts[d[0]]; b.appendChild(n);
+      b.addEventListener("click", function () { wallFilter = d[0]; wallEnter = true; renderWall(); });
+      chips.appendChild(b);
+    });
+
+    var shown = notes.filter(noteMatches).sort(function (a, b) {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      return a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0;
+    });
+    if (!shown.length) {
+      var none = el("p", "wall-none"); none.textContent = "אין פתקים שמתאימים לסינון.";
+      grid.style.columnCount = "1"; grid.appendChild(none); return;
+    }
+    grid.classList.toggle("enter", wallEnter);
+    wallEnter = false;
+    shown.forEach(function (n, i) {
+      var card = buildNoteCard(n);
+      card.style.setProperty("--i", i);
+      if (n.id === freshNoteId) card.classList.add("fresh");
+      grid.appendChild(card);
+    });
+    freshNoteId = null;
+  }
+
+  function buildNoteCard(n) {
+    var color = NOTE_COLOR_KEYS[n.color] || NOTE_COLOR_KEYS.sea;
+    var card = el("article", "note" + (n.pinned ? " is-pinned" : ""), { tabindex: "0", role: "button", "aria-label": "פתח פתק" });
+    card.style.setProperty("--n-color", color.css);
+    card.style.setProperty("--tilt", tiltFor(n.id).toFixed(2) + "deg");
+    card.setAttribute("data-note-id", n.id);
+
+    var top = el("div", "note-top");
+    var ico = el("span", "note-ico"); ico.innerHTML = SVG_KIND[n.kind] || SVG_KIND.thought; top.appendChild(ico);
+    var kind = el("span", "note-kind"); kind.textContent = NOTE_KIND_KEYS[n.kind].label; top.appendChild(kind);
+    if (n.mood) { var m = el("span", "note-mood"); m.textContent = n.mood; top.appendChild(m); }
+    card.appendChild(top);
+
+    var lines = n.text.split("\n");
+    var rest = lines.slice(1).join("\n").replace(/^\s+/, "");
+    if (lines[0].trim() && rest) {
+      var title = el("h3", "note-title"); bidiRender(title, lines[0].trim()); card.appendChild(title);
+      var body = el("p", "note-body"); bidiRender(body, rest); card.appendChild(body);
+    } else {
+      var only = el("p", "note-body"); bidiRender(only, n.text.trim()); card.appendChild(only);
+    }
+
+    var foot = el("div", "note-foot");
+    var date = el("span", "mono"); date.textContent = fmtNoteDate(n.createdAt);
+    foot.appendChild(date);
+    if (n.private) {
+      var lock = el("span", "lock"); lock.innerHTML = SVG_LOCK; lock.appendChild(document.createTextNode("רק כאן"));
+      lock.title = "נשאר רק במכשיר הזה"; foot.appendChild(lock);
+    }
+    card.appendChild(foot);
+
+    var pin = el("button", "note-pin" + (n.pinned ? " on" : ""), { type: "button", "aria-label": n.pinned ? "בטל הצמדה" : "הצמד לראש הקיר", "aria-pressed": n.pinned ? "true" : "false" });
+    pin.innerHTML = SVG_PIN;
+    pin.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var cur = noteById(n.id); if (!cur) return;
+      cur.pinned = !cur.pinned; touch(cur); saveState(); renderWall();
+    });
+    card.appendChild(pin);
+
+    card.addEventListener("click", function () { openSheet("edit", n.id); });
+    card.addEventListener("keydown", function (e) {
+      if (e.target === card && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openSheet("edit", n.id); }
+    });
+    return card;
+  }
+
+  /* ----- sheet ----- */
+  function sheetEls() {
+    return {
+      backdrop: document.getElementById("sheetBackdrop"), sheet: document.getElementById("noteSheet"),
+      title: document.getElementById("sheetTitle"), text: document.getElementById("noteText"),
+      kindSeg: document.getElementById("kindSeg"), moodField: document.getElementById("moodField"),
+      moodChips: document.getElementById("moodChips"), swatches: document.getElementById("swatches"),
+      priv: document.getElementById("notePrivate"), privHint: document.getElementById("privateHint"),
+      del: document.getElementById("noteDelete"), toTask: document.getElementById("noteToTask"),
+      toTaskForm: document.getElementById("toTaskForm"), toTaskSelect: document.getElementById("toTaskSelect")
+    };
+  }
+
+  function openSheet(mode, id, preset) {
+    var E = sheetEls();
+    var n = mode === "edit" ? noteById(id) : null;
+    if (mode === "edit" && !n) return;
+    var draft = null;
+    if (mode === "new") { try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) {} }
+    var base = n || draft || {};
+    var kind = (n && n.kind) || (preset && preset.kind) || base.kind || "thought";
+    var text = n ? n.text : (preset && preset.text != null ? preset.text : (base.text || ""));
+    sheetCtx = {
+      mode: mode, id: n ? n.id : null, kind: kind,
+      mood: n ? n.mood : (base.mood || ""),
+      color: n ? n.color : ((base.colorManual && base.color) || NOTE_KIND_KEYS[kind].color),
+      colorManual: n ? n.color !== NOTE_KIND_KEYS[n.kind].color : !!base.colorManual,
+      priv: n ? n.private : (base.priv !== undefined ? !!base.priv : true)
+    };
+    E.text.value = text;
+    E.text.placeholder = mode === "new" ? currentPrompt() : "";
+    document.getElementById("promptStrip").hidden = mode !== "new";
+    document.getElementById("promptText").textContent = currentPrompt();
+    E.title.textContent = mode === "new" ? "פתק חדש" : "עריכת פתק";
+    E.toTaskForm.classList.remove("open");
+    var del = E.del; del.classList.remove("confirm"); del.textContent = "מחק";
+    E.backdrop.hidden = false; E.sheet.hidden = false;
+    document.body.style.overflow = "hidden";
+    refreshSheetUI();
+    setTimeout(function () {
+      E.text.focus();
+      var len = E.text.value.length; try { E.text.setSelectionRange(len, len); } catch (e) {}
+    }, 60);
+  }
+
+  function closeSheet() {
+    var E = sheetEls();
+    E.backdrop.hidden = true; E.sheet.hidden = true;
+    document.body.style.overflow = "";
+    sheetCtx = null;
+    if (pendingRender) { pendingRender = false; renderAll(); }
+  }
+
+  function saveDraft() {
+    if (!sheetCtx || sheetCtx.mode !== "new") return;
+    var E = sheetEls();
+    try {
+      if (E.text.value.trim()) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ text: E.text.value, kind: sheetCtx.kind, mood: sheetCtx.mood, color: sheetCtx.color, colorManual: sheetCtx.colorManual, priv: sheetCtx.priv }));
+      } else localStorage.removeItem(DRAFT_KEY);
+    } catch (e) {}
+  }
+
+  function refreshSheetUI() {
+    var E = sheetEls(), c = sheetCtx;
+    if (!c) return;
+    var color = NOTE_COLOR_KEYS[c.color] || NOTE_COLOR_KEYS.sea;
+    E.sheet.style.setProperty("--s-color", color.css);
+    Array.prototype.forEach.call(E.kindSeg.children, function (b) { b.setAttribute("aria-checked", b.getAttribute("data-kind") === c.kind ? "true" : "false"); });
+    E.moodField.hidden = c.kind !== "feeling";
+    Array.prototype.forEach.call(E.moodChips.children, function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-mood") === c.mood ? "true" : "false"); });
+    Array.prototype.forEach.call(E.swatches.children, function (b) { b.setAttribute("aria-checked", b.getAttribute("data-color") === c.color ? "true" : "false"); });
+    E.priv.checked = c.priv;
+    E.privHint.textContent = c.priv
+      ? "הפתק נשמר רק בטלפון הזה ולא עולה לענן. אם נתוני האפליקציה יימחקו הוא יאבד, לכן כדאי לגבות מדי פעם דרך ההגדרות."
+      : "הפתק מסתנכרן לענן עם שאר האפליקציה. כל מי שיש לו את קישור הסנכרון יכול לקרוא אותו.";
+    E.del.hidden = c.mode !== "edit";
+    E.toTask.hidden = c.mode !== "edit";
+  }
+
+  function saveSheet() {
+    var E = sheetEls(), c = sheetCtx;
+    if (!c) return;
+    var text = E.text.value.replace(/\s+$/, "");
+    if (!text.trim()) { E.text.focus(); return; }
+    var now = Date.now(), createdId = null;
+    if (c.mode === "new") {
+      var newId = "n-" + now + "-" + Math.round(Math.random() * 9999);
+      createdId = newId;
+      state.notes.push({
+        id: newId,
+        text: text, kind: c.kind, mood: c.kind === "feeling" ? c.mood : "", color: c.color,
+        pinned: false, private: c.priv, createdAt: new Date(now).toISOString(), updatedAt: now
+      });
+      try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    } else {
+      var n = noteById(c.id);
+      if (!n) { closeSheet(); return; }
+      var wasPrivate = n.private;
+      n.text = text; n.kind = c.kind; n.mood = c.kind === "feeling" ? c.mood : ""; n.color = c.color; n.private = c.priv;
+      n.updatedAt = now;
+      if (c.priv && !wasPrivate) {
+        // was shared, now local-only: leave a tombstone so the cloud copy (and copies on other devices) is purged
+        state.tombstones[n.id] = now;
+        n.updatedAt = now + 1;
+      }
+    }
+    saveState(); closeSheet();
+    wallFilter = "all"; wallQuery = ""; document.getElementById("wallSearch").value = "";
+    freshNoteId = createdId; wallEnter = false;
+    renderWall();
+  }
+
+  function deleteNoteFromSheet() {
+    var c = sheetCtx; if (!c || !c.id) return;
+    state.notes = state.notes.filter(function (n) { return n.id !== c.id; });
+    state.tombstones[c.id] = Date.now();
+    saveState(); closeSheet(); renderWall();
+  }
+
+  function noteToTask() {
+    var E = sheetEls(), c = sheetCtx;
+    if (!c || !c.id) return;
+    var n = noteById(c.id); if (!n) return;
+    var text = E.text.value.trim() || n.text.trim();
+    var lines = text.split("\n");
+    var title = lines[0].trim().slice(0, 140) || "משימה מהקיר";
+    var rest = lines.slice(1).join("\n").trim();
+    var domain = E.toTaskSelect.value;
+    addTask(domain, title, null, null, 2);
+    var created = state.tasks[state.tasks.length - 1];
+    if (rest) { created.details = rest; touch(created); saveState(); }
+    var dName = domainOf(domain).name;
+    E.toTaskForm.classList.remove("open");
+    closeSheet();
+    showToast("נוספה משימה בתחום " + dName);
+  }
+
+  function buildSheetControls() {
+    var E = sheetEls();
+    NOTE_KINDS.forEach(function (k) {
+      var b = el("button", "", { type: "button", role: "radio", "data-kind": k.key });
+      b.textContent = k.label;
+      b.addEventListener("click", function () {
+        sheetCtx.kind = k.key;
+        if (!sheetCtx.colorManual) sheetCtx.color = k.color;
+        if (k.key !== "feeling") sheetCtx.mood = "";
+        saveDraft(); refreshSheetUI();
+      });
+      E.kindSeg.appendChild(b);
+    });
+    MOODS.forEach(function (m) {
+      var b = el("button", "", { type: "button", "data-mood": m });
+      b.textContent = m;
+      b.addEventListener("click", function () { sheetCtx.mood = sheetCtx.mood === m ? "" : m; saveDraft(); refreshSheetUI(); });
+      E.moodChips.appendChild(b);
+    });
+    NOTE_COLORS.forEach(function (c) {
+      var b = el("button", "swatch", { type: "button", role: "radio", "data-color": c.key, "aria-label": c.name });
+      b.style.setProperty("--sw", c.css);
+      b.addEventListener("click", function () { sheetCtx.color = c.key; sheetCtx.colorManual = true; saveDraft(); refreshSheetUI(); });
+      E.swatches.appendChild(b);
+    });
+    DOMAINS.forEach(function (d) {
+      var o = el("option"); o.value = d.key; o.textContent = d.name; E.toTaskSelect.appendChild(o);
+    });
+  }
+
+  function wireWall() {
+    var E = sheetEls();
+    buildSheetControls();
+    document.getElementById("composerBtn").addEventListener("click", function () { openSheet("new"); });
+    document.getElementById("promptShuffle").addEventListener("click", function () { nextPrompt(); });
+    document.getElementById("promptNext").addEventListener("click", function () { nextPrompt(); });
+    document.getElementById("promptUse").addEventListener("click", usePrompt);
+    var fab = document.getElementById("wallFab");
+    fab.addEventListener("click", function () { openSheet("new"); });
+    window.addEventListener("scroll", function () { fab.classList.toggle("on", window.scrollY > 320); }, { passive: true });
+    var qk = document.getElementById("quickKinds");
+    NOTE_KINDS.forEach(function (k) {
+      var b = el("button", "qk", { type: "button" });
+      b.style.setProperty("--k", NOTE_COLOR_KEYS[k.color].css);
+      b.innerHTML = SVG_KIND[k.key];
+      b.appendChild(document.createTextNode(k.label));
+      b.addEventListener("click", function () { openSheet("new", null, { kind: k.key }); });
+      qk.appendChild(b);
+    });
+    document.getElementById("sheetClose").addEventListener("click", closeSheet);
+    E.backdrop.addEventListener("click", closeSheet);
+    document.getElementById("noteSave").addEventListener("click", saveSheet);
+    document.getElementById("noteSaveTop").addEventListener("click", saveSheet);
+    E.text.addEventListener("input", saveDraft);
+    E.text.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); saveSheet(); }
+    });
+    E.priv.addEventListener("change", function () { sheetCtx.priv = E.priv.checked; saveDraft(); refreshSheetUI(); });
+    E.del.addEventListener("click", function () {
+      if (E.del.classList.contains("confirm")) { deleteNoteFromSheet(); return; }
+      E.del.classList.add("confirm"); E.del.textContent = "לאשר מחיקה?";
+      setTimeout(function () { E.del.classList.remove("confirm"); E.del.textContent = "מחק"; }, 3000);
+    });
+    E.toTask.addEventListener("click", function () { E.toTaskForm.classList.toggle("open"); });
+    document.getElementById("toTaskGo").addEventListener("click", noteToTask);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && sheetCtx) closeSheet(); });
+    document.getElementById("wallSearch").addEventListener("input", function (e) {
+      wallQuery = e.target.value.trim().toLowerCase(); renderWall();
+    });
+    syncPromptUI();
+  }
+
+  /* ----- views + tab bar ----- */
+  function showView(name, updateHash) {
+    currentView = name === "wall" ? "wall" : "home";
+    document.getElementById("viewHome").hidden = currentView !== "home";
+    document.getElementById("viewWall").hidden = currentView !== "wall";
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
+      b.setAttribute("aria-current", b.getAttribute("data-view") === currentView ? "page" : "false");
+    });
+    if (updateHash) {
+      try { history.replaceState(null, "", location.pathname + location.search + (currentView === "wall" ? "#wall" : "")); } catch (e) {}
+    }
+    if (currentView === "wall") { wallEnter = true; renderWall(); }
+    updateFab();
+    window.scrollTo(0, 0);
+  }
+  function wireTabs() {
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
+      b.addEventListener("click", function () { showView(b.getAttribute("data-view"), true); });
+    });
+    window.addEventListener("hashchange", function () { showView(location.hash === "#wall" ? "wall" : "home", false); });
+    showView(location.hash === "#wall" ? "wall" : "home", false);
+  }
+
+  var renderedDay = null;
+  function renderAll() {
+    renderedDay = todayISO();
+    renderHero(); renderToday(); renderWeekly(); renderDomains(); renderProgress(); renderWall();
+  }
+
+  /* ---------------- mutations ---------------- */
+  function toggleTask(id) {
+    var t = state.tasks.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    if (t.recur) {
+      var todayS = todayISO();
+      var wasDone = isDone(t, todayS);
+      var pKey = periodKeyFor(t.recur, todayS);
+      t.doneLog = t.doneLog || [];
+      if (wasDone) {
+        t.lastDoneAt = null;
+        t.doneLog = t.doneLog.filter(function (k) { return k !== pKey; });
+      } else {
+        t.lastDoneAt = new Date().toISOString();
+        if (t.doneLog.indexOf(pKey) === -1) t.doneLog.push(pKey);
+      }
+    } else {
+      var next = !t.done;
+      t.done = next; t.completedAt = next ? new Date().toISOString() : null;
+    }
+    touch(t);
+    saveState(); renderAll();
+  }
+  function deleteTask(id) {
+    state.tasks = state.tasks.filter(function (t) { return t.id !== id; });
+    state.tombstones[id] = Date.now(); // a deletion is recorded so it wins over older copies on other devices
+    saveState(); renderAll();
+  }
+  function updateTask(id, patch) {
+    var t = state.tasks.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    Object.assign(t, patch);
+    touch(t);
+    saveState(); renderAll();
+  }
+  function addTask(domain, title, dueDate, dueTime, priority, recur) {
+    state.tasks.push({
+      id: "t-" + Date.now() + "-" + Math.round(Math.random() * 9999),
+      domain: domain, title: title, notes: "", priority: priority,
+      dueDate: recur ? null : (dueDate || null), dueTime: recur ? null : (dueTime || null),
+      recur: recur || null, lastDoneAt: null, doneLog: [],
+      done: false, createdAt: new Date().toISOString(), completedAt: null,
+      details: "", checklist: [], guideSeen: [], updatedAt: Date.now()
+    });
+    saveState(); renderAll();
+  }
+  function saveSettings(friendName, moveDate) {
+    state.settings.friendName = friendName || DEFAULT_SETTINGS.friendName;
+    state.settings.moveDate = moveDate || DEFAULT_SETTINGS.moveDate;
+    state.settingsAt = Date.now();
+    saveState(); renderHero();
+  }
+
+  // Authoritative replace (import / restore): everything in the imported data counts as freshly edited,
+  // and tasks that are not in it are recorded as deleted, so cloud sync can't undo the import.
+  function replaceStateFrom(parsed) {
+    var imported = migrateState(parsed);
+    if (!imported) return false;
+    var now = Date.now();
+    var keep = {};
+    imported.tasks.forEach(function (t) { t.updatedAt = now; keep[t.id] = true; });
+    var tomb = Object.assign({}, imported.tombstones, state.tombstones);
+    state.tasks.forEach(function (t) { if (!keep[t.id]) tomb[t.id] = now; });
+    imported.notes.forEach(function (n) { n.updatedAt = now; keep[n.id] = true; });
+    state.notes.forEach(function (n) { if (!keep[n.id]) tomb[n.id] = now; });
+    Object.keys(keep).forEach(function (k) { delete tomb[k]; });
+    imported.tombstones = tomb;
+    imported.settingsAt = now;
+    state = imported;
+    saveState(); renderAll();
+    return true;
+  }
+
+  /* ---------------- settings + export/import ---------------- */
+  function wireSettingsPanel() {
+    var toggle = document.getElementById("settingsToggle");
+    var panel = document.getElementById("settingsPanel");
+    var close = document.getElementById("settingsClose");
+    var save = document.getElementById("settingsSave");
+    var nameInput = document.getElementById("settingName");
+    var dateInput = document.getElementById("settingDate");
+
+    toggle.addEventListener("click", function () {
+      nameInput.value = state.settings.friendName;
+      dateInput.value = state.settings.moveDate;
+      panel.hidden = false;
+    });
+    close.addEventListener("click", function () { panel.hidden = true; });
+    save.addEventListener("click", function () { saveSettings(nameInput.value.trim(), dateInput.value); panel.hidden = true; });
+
+    var exportBox = document.getElementById("exportBox");
+    var exportText = document.getElementById("exportText");
+    var importBox = document.getElementById("importBox");
+    var importText = document.getElementById("importText");
+
+    var msg = document.getElementById("settingsMsg");
+    function showMsg(text, ok) {
+      msg.textContent = text;
+      msg.className = "import-msg " + (ok ? "ok" : "err");
+      msg.hidden = false;
+    }
+    function copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+      return Promise.reject(new Error("no clipboard"));
+    }
+
+    document.getElementById("exportBtn").addEventListener("click", function () {
+      importBox.hidden = true; msg.hidden = true;
+      exportText.value = JSON.stringify(state, null, 2);
+      exportBox.hidden = false;
+      exportText.focus();
+      exportText.select();
+    });
+    document.getElementById("exportCopy").addEventListener("click", function () {
+      copyText(exportText.value)
+        .then(function () { showMsg("הגיבוי הועתק. הדביקו אותו בהערות או בהודעה לעצמכם.", true); })
+        .catch(function () { exportText.focus(); exportText.select(); showMsg("ההעתקה האוטומטית לא זמינה. הטקסט מסומן — העתיקו ידנית.", false); });
+    });
+
+    document.getElementById("importBtn").addEventListener("click", function () {
+      exportBox.hidden = true; msg.hidden = true;
+      importText.value = "";
+      importBox.hidden = false;
+      importText.focus();
+    });
+    document.getElementById("importCancel").addEventListener("click", function () { importBox.hidden = true; });
+    document.getElementById("importLoad").addEventListener("click", function () {
+      var parsed = null;
+      try { parsed = JSON.parse(importText.value); } catch (e) {}
+      if (parsed && replaceStateFrom(parsed)) {
+        importBox.hidden = true;
+        showMsg("הגיבוי נטען.", true);
+      } else {
+        showMsg("הטקסט לא נראה כמו גיבוי תקין. הדביקו את כל הטקסט שיוצא מכפתור הייצוא.", false);
+      }
+    });
+
+    document.getElementById("copySyncBtn").addEventListener("click", function () {
+      if (!cloudId) { showMsg("הסנכרון לענן לא פעיל כרגע (אין אינטרנט או שהדף נפתח כקובץ).", false); return; }
+      var url = location.origin + location.pathname + "?sync=" + cloudId;
+      copyText(url)
+        .then(function () { showMsg("קישור הסנכרון הועתק. כל מי שיש לו את הקישור רואה וגם משנה את אותם נתונים.", true); })
+        .catch(function () { showMsg("הקישור: " + url, true); });
+    });
+
+    var restoreBtn = document.getElementById("restoreBtn");
+    var hasBackup = false;
+    try { hasBackup = !!localStorage.getItem(BACKUP_KEY); } catch (e) {}
+    restoreBtn.hidden = !hasBackup;
+    restoreBtn.addEventListener("click", function () {
+      var raw = null, parsed = null;
+      try { raw = localStorage.getItem(BACKUP_KEY); parsed = raw ? JSON.parse(raw) : null; } catch (e) {}
+      if (parsed && replaceStateFrom(parsed)) showMsg("הנתונים שוחזרו למצב שלפני השדרוג.", true);
+      else showMsg("לא נמצא גיבוי לשחזור.", false);
+    });
+  }
+
+  function wireWeekNav() {
+    document.getElementById("weekPrev").addEventListener("click", function () { weekOffset += 1; renderWeekly(); });
+    document.getElementById("weekNext").addEventListener("click", function () { weekOffset -= 1; renderWeekly(); });
+  }
+
+  function init() {
+    state = loadState();
+    saveLocalOnly();
+    renderAll();
+    wireSettingsPanel();
+    wireWeekNav();
+    wireWall();
+    wireTabs();
+    if (!STORAGE_OK) showStorageWarning();
+    initCloudSync();
+    // an installed app stays resident for days: when it comes back to the foreground, roll the day over and re-sync
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState !== "visible") return;
+      if (renderedDay && renderedDay !== todayISO()) renderSafe();
+      if (cloudReady && Date.now() - lastSyncAt > 15000) cloudSync();
+    });
+  }
+
+  if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", init); } else { init(); }
+})();
+</script>
+</body>
+</html>
